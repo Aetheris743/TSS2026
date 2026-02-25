@@ -17,4 +17,4 @@ EXPOSE 14141/udp
 
 # Start TSS when the container starts. 
 # (note, exits immidately if no stdin is present. try running with `-it`)
-CMD ["/usr/local/bin/start-tss"]
+CMD ["./server.exe"]
