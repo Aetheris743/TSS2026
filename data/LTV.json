@@ -4,9 +4,9 @@
 		"last_known_y":	-10485.6
 	},
 	"signal":	{
-		"strength":	0,
+		"strength":	-48.501701,
 		"pings_left":	0,
-		"ping_requested":	false
+		"ping_requested":	0
 	},
 	"errors":	{
 		"recovery_mode":	true,
