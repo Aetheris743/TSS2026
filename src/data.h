@@ -122,9 +122,9 @@ static const udp_command_mapping_t udp_command_mappings[] = {
     //LTV command
     {2023, "ltv.errors.recovery_mode", "bool"},
     {2024, "ltv.errors.dust_sensor", "bool"},
-    {2025, "ltv.errors.comms.power_distribution" , "bool"},
-    {2026, "ltv.errors.comms.nav_system", "bool"},
-    {2027, "ltv.errors.comms.electronic_heater", "bool"},
+    {2025, "ltv.errors.power_distribution" , "bool"},
+    {2026, "ltv.errors.nav_system", "bool"},
+    {2027, "ltv.errors.electronic_heater", "bool"},
     {2028, "ltv.errors.comms", "bool"},
     {2029, "ltv.errors.fuse", "bool"},
 
