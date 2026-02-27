@@ -52,7 +52,13 @@ void update_O2_error_state(sim_engine_t* sim_engine);
 void update_fan_error_state(sim_engine_t* sim_engine);
 void update_power_error_state(sim_engine_t* sim_engine);
 void update_scrubber_state(sim_engine_t* sim_engine);
-void update_remaining_errors(sim_engine_t* engine);
+void update_num_remaining_errors_LTV(sim_engine_t* engine);
+
+//UIA related functions
+void update_sim_UIA_field_settings(sim_engine_t* sim_engine);
+bool update_sim_UIA_connected(sim_engine_t* sim_engine);
+void update_sim_active_states(sim_engine_t* sim_engine);
+void initialize_UIA_override_dependent_values(sim_engine_t* sim_engine);
 
 // Helper functions
 void reverse_bytes(unsigned char* bytes);
@@ -68,7 +74,7 @@ float extract_float_value(unsigned char* data);
 // NOTE: see server.h for command definitions to send to DUST Unreal Engine simulation
 // NOTE: most of these commands have been reused from the TSS 2025 project to help support backwards compatibility. In the future, it may be reccomended to standardize these.
 static const udp_command_mapping_t udp_command_mappings[] = {
-    // ROVER commands (sent from the DUST Unreal Engine simulation over UDP)
+    // ROVER commands (sent to/from the DUST Unreal Engine simulation over UDP)
     {1103, "rover.pr_telemetry.cabin_heating", "bool"},
     {1104, "rover.pr_telemetry.cabin_cooling", "bool"},
     {1105, "rover.pr_telemetry.co2_scrubber", "bool"},
@@ -122,9 +128,9 @@ static const udp_command_mapping_t udp_command_mappings[] = {
     //LTV command
     {2023, "ltv.errors.recovery_mode", "bool"},
     {2024, "ltv.errors.dust_sensor", "bool"},
-    {2025, "ltv.errors.comms.power_distribution" , "bool"},
-    {2026, "ltv.errors.comms.nav_system", "bool"},
-    {2027, "ltv.errors.comms.electronic_heater", "bool"},
+    {2025, "ltv.errors.power_distribution" , "bool"},
+    {2026, "ltv.errors.nav_system", "bool"},
+    {2027, "ltv.errors.electronic_heater", "bool"},
     {2028, "ltv.errors.comms", "bool"},
     {2029, "ltv.errors.fuse", "bool"},
 

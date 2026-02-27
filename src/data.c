@@ -7,8 +7,10 @@
 #include <string.h>
 #include <time.h>
 
-bool oxy_error_flag = true;
+/////////flags//////////
+bool include_UIA_flag = true;
 bool fan_error_flag = false;
+bool o2_error_flag = false;
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                        Backend Lifecycle Management
@@ -29,8 +31,6 @@ struct backend_data_t *init_backend() {
     backend->running_pr_sim = -1;
     backend->pr_sim_paused = false;
 
-    
-
     // Initialize simulation engine
     backend->sim_engine = sim_engine_create();
     if (backend->sim_engine) {
@@ -42,6 +42,15 @@ struct backend_data_t *init_backend() {
         if (!sim_engine_initialize(backend->sim_engine)) {
             printf("Warning: Failed to initialize simulation engine\n");
         }
+
+        //if UIA is included, initialize the UIA override dependent values at the start of the simulation
+        if(include_UIA_flag) {
+            printf("UIA is included in this simulation run. Initializing dependent values...\n");
+            initialize_UIA_override_dependent_values(backend->sim_engine);
+        } else {
+            printf("UIA override is not included in this simulation run.\n");
+        }
+
     } else {
         printf("Warning: Failed to create simulation engine\n");
     }
@@ -51,6 +60,356 @@ struct backend_data_t *init_backend() {
     printf("Backend and simulation engine initialized successfully\n");
 
     return backend;
+}
+
+/**
+* initialize all values where initialization value depends on whether including UIA override
+* @param sim_engine Pointer to the simulation engine to update
+*/
+void initialize_UIA_override_dependent_values(sim_engine_t* sim_engine) {
+    if (!sim_engine) {
+        return;
+    }
+
+    // Get pointer to EVA1 component for easy access to its fields
+    sim_component_t* eva1 = sim_engine_get_component(sim_engine, "eva1");
+
+    //set eva.fields.coolant_storage to 0 at the start of the simulation and set algorithm to constant value to keep at 0 until ready to grow
+    sim_field_t* coolant_storage_field = sim_engine_find_field_within_component(eva1, "coolant_storage");
+    if (coolant_storage_field) {
+        coolant_storage_field->current_value.f = 0.0f;
+        coolant_storage_field->algorithm = SIM_ALGO_CONSTANT_VALUE;
+    } else {
+        printf("Simulation tried to access non-existent field 'eva1.coolant_storage' for UIA override initialization\n");
+    }
+
+    //set eva1.fields.suit_pressure_oxy.end_value_constant_growth to 0 in the JSON file to keep at 0 until ready to grow
+    sim_field_t* suit_pressure_oxy_field = sim_engine_find_field_within_component(eva1, "suit_pressure_oxy");
+    if (suit_pressure_oxy_field) {
+        suit_pressure_oxy_field->current_value.f = 0.0f;
+        suit_pressure_oxy_field->algorithm = SIM_ALGO_CONSTANT_VALUE;
+    } else {
+        printf("Simulation tried to access non-existent field 'eva1.suit_pressure_oxy' for UIA override initialization\n");
+    }
+
+    //make sure that suit_pressure_co2 stays at 0 during the simulation to keep suit_pressure_total just = to suit_pressure_oxy
+    sim_field_t* suit_pressure_co2_field = sim_engine_find_field_within_component(eva1, "suit_pressure_co2");
+    if (suit_pressure_co2_field) {
+        suit_pressure_co2_field->current_value.f = 0.0f;
+        suit_pressure_co2_field->algorithm = SIM_ALGO_CONSTANT_VALUE;
+    } else {
+        printf("Simulation tried to access non-existent field 'eva1.suit_pressure_co2' for UIA override initialization\n");
+    }
+
+}
+
+/**
+* Returns whether UIA is connected
+* @param sim_engine Pointer to the simulation engine to check
+* @return true if UIA is connected, false otherwise
+*/
+bool is_UIA_connected(sim_engine_t* sim_engine) {
+    if (!sim_engine) {
+        return false;
+    }
+
+    bool uia_power_supply_connected_eva1 = sim_engine->uia_field_settings->eva1_power;
+    bool dcu_using_umbilical_power_eva1 = sim_engine->dcu_field_settings->battery_lu;
+
+    return (uia_power_supply_connected_eva1 && dcu_using_umbilical_power_eva1);
+}
+
+/**
+* Updates active states of all applicable fields based on whether UIA is connected and the current DCU command settings
+* @param sim_engine Pointer to the simulation engine to update
+ */
+
+ void update_sim_active_states(sim_engine_t* sim_engine) {
+    if (!sim_engine) {
+        return;
+    }
+
+    //find all fields that are running
+    for(int i = 0; i < sim_engine->total_field_count; i++) {
+        sim_field_t* field = sim_engine->update_order[i];
+
+        // Find the component this field belongs to
+        sim_component_t* component = NULL;
+        for (int j = 0; j < sim_engine->component_count; j++) {
+            if (strcmp(sim_engine->components[j].component_name, field->component_name) == 0) {
+                component = &sim_engine->components[j];
+                break;
+            }
+        }
+
+        
+        field->active = true; //set all fields to active by default, then set to false if they depend on a DCU command that is not active
+
+        //set active to true by default, will be set to false for fields that depend on DCU commands until the correct command is received
+        if(strncmp(field->field_name, "primary_battery_level", 21) == 0 && !(sim_engine->dcu_field_settings->battery_lu == false && sim_engine->dcu_field_settings->battery_ps == true)) {
+            field->active = false;
+        } else if(strncmp(field->field_name, "secondary_battery_level", 23) == 0 && !(sim_engine->dcu_field_settings->battery_lu == false && sim_engine->dcu_field_settings->battery_ps == false)) {
+            field->active = false;
+        } else if(strncmp(field->field_name, "oxy_pri_storage", 15) == 0 && (sim_engine->dcu_field_settings->o2 == false)) {
+            field->active = false;
+        } else if(strncmp(field->field_name, "oxy_sec_storage", 15) == 0 && (sim_engine->dcu_field_settings->o2 == true)) {
+            field->active = false;
+        } else if(strncmp(field->field_name, "fan_pri_rpm", 11) == 0 && (sim_engine->dcu_field_settings->fan == false)) {
+            field->active = false;
+        } else if(strncmp(field->field_name, "fan_sec_rpm", 11) == 0 && (sim_engine->dcu_field_settings->fan == true)) {
+            field->active = false;
+        } else if(strncmp(field->field_name, "coolant_liquid_pressure", 23) == 0 && (sim_engine->dcu_field_settings->pump == false)) {
+            field->active = false;
+        } else {
+            field->active = true;
+        }
+
+        //error overrides active status, so if an error is active for a field, it should be active regardless of DCU settings
+        if((sim_engine->error_type == SUIT_PRESSURE_OXY_LOW) && (strcmp(field->field_name, "oxy_pri_storage") == 0)) {
+            field->active = true;
+        } else if((sim_engine->error_type == SUIT_PRESSURE_OXY_HIGH) && (strcmp(field->field_name, "oxy_pri_storage") == 0)) {
+            field->active = true;
+        } else if((sim_engine->error_type == FAN_RPM_HIGH) && (strcmp(field->field_name, "fan_pri_rpm") == 0)) {
+            field->active = true;
+        } else if((sim_engine->error_type == FAN_RPM_LOW) && (strcmp(field->field_name, "fan_pri_rpm") == 0)) {
+            field->active = true;
+        }
+    }
+
+
+    //if UIA is connected, override active states based on UIA states
+    if(is_UIA_connected(sim_engine)) {
+        //check if o2 vent is open and make suit_pressure_oxy fields active if so
+        bool uia_oxy_vent_open = sim_engine->uia_field_settings->oxy_vent;
+
+        if (uia_oxy_vent_open) {
+            sim_component_t* component = sim_engine_get_component(sim_engine, "eva1");
+            sim_field_t* suit_pressure_oxy_field = sim_engine_find_field_within_component(component, "oxy_pri_storage");
+            if (suit_pressure_oxy_field) {
+                suit_pressure_oxy_field->active = true; //make the field active so it starts updating based on the new algorithm
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.oxy_pri_storage' for UIA override\n");
+            }
+
+            sim_field_t* suit_pressure_oxy_field2 = sim_engine_find_field_within_component(component, "oxy_sec_storage");
+            if (suit_pressure_oxy_field2) {
+                suit_pressure_oxy_field2->active = true; //make the field active so it starts updating based on the new algorithm
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.oxy_sec_storage' for UIA override\n");
+            }
+        }
+    }
+}
+
+/**
+* UIA override function overrides EVA simulation values.
+* If the UIA is connected, the update will be based on 
+* ingress/egress procedures and UIA states.
+* @param sim_engine Pointer to the simulation engine to update
+* @return true if the UIA is connected and overrides were applied, false otherwise
+*/
+bool update_sim_UIA_connected(sim_engine_t* sim_engine) {
+
+    if (!sim_engine) {
+        return false;
+    }
+
+    // Get pointer to EVA1 component for easy access to its fields
+    sim_component_t* eva1 = sim_engine_get_component(sim_engine, "eva1");
+    if (eva1 == NULL) {
+        printf("Simulation tried to access non-existent component 'eva1' for UIA override\n");
+        return false;
+    }
+
+    //check if UIA is connected by checking the DCU command for UIA connection
+    if (is_UIA_connected(sim_engine)) {
+        //check if o2 vent is open and drain o2 if so
+        bool uia_oxy_vent_open = sim_engine->uia_field_settings->oxy_vent;
+
+        //check if o2 vent is closed and oxygen EMU1 is open
+        //if so, fill 
+        bool uia_oxy_vent_closed = !sim_engine->uia_field_settings->oxy_vent;
+        bool uia_oxy_emu1_open = sim_engine->uia_field_settings->eva1_oxy;
+        bool uia_oxy_emu1_closed = !sim_engine->uia_field_settings->eva1_oxy;
+
+        bool dcu_using_primary_oxygen = sim_engine->dcu_field_settings->o2 == true;
+        bool dcu_using_secondary_oxygen = sim_engine->dcu_field_settings->o2 == false;
+
+        if (uia_oxy_vent_open) {
+            sim_field_t* suit_pressure_oxy_field = sim_engine_find_field_within_component(eva1, "oxy_pri_storage");
+            if (suit_pressure_oxy_field) {
+                suit_pressure_oxy_field->active = true; //make the field active so it starts updating based on the new algorithm
+                suit_pressure_oxy_field->algorithm = SIM_ALGO_LINEAR_DECAY;
+                suit_pressure_oxy_field->rate.f = OXY_VENT_RATE; //set the rate of decay to 0.5 units per second when the vent is open
+                
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.oxy_pri_storage' for UIA override\n");
+            }
+
+            sim_field_t* suit_pressure_oxy_field2 = sim_engine_find_field_within_component(eva1, "oxy_sec_storage");
+            if (suit_pressure_oxy_field2) {
+                suit_pressure_oxy_field2->active = true; //make the field active so it starts updating based on the new algorithm
+                suit_pressure_oxy_field2->algorithm = SIM_ALGO_LINEAR_DECAY;
+                suit_pressure_oxy_field2->rate.f = OXY_VENT_RATE; //set the rate of decay to 0.5 units per second when the vent is open
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.oxy_sec_storage' for UIA override\n");
+            }
+
+        } else if(uia_oxy_vent_closed && uia_oxy_emu1_open) {
+            //on primary oxygen
+            if(dcu_using_primary_oxygen) {
+                sim_field_t* oxy_pri_storage = sim_engine_find_field_within_component(eva1, "oxy_pri_storage");
+                if (oxy_pri_storage) {
+                    oxy_pri_storage->algorithm = SIM_ALGO_LINEAR_GROWTH;
+                    oxy_pri_storage->rate.f = OXY_FILL_RATE;
+                } else {
+                    printf("Simulation tried to access non-existent field 'eva1.oxy_pri_storage' for UIA override\n");
+                }
+
+            //put secondary oxygen back on decay
+                sim_field_t* oxy_sec_storage = sim_engine_find_field_within_component(eva1, "oxy_sec_storage");
+                    if (oxy_sec_storage) {
+                        oxy_sec_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
+                        oxy_sec_storage->rate.f = OXY_RATE;
+                    } else {
+                        printf("Simulation tried to access non-existent field 'eva1.oxy_sec_storage' for UIA override\n");
+                    }
+            } 
+
+            //on secondary oxygen
+            if(dcu_using_secondary_oxygen) {
+                sim_field_t* oxy_sec_storage = sim_engine_find_field_within_component(eva1, "oxy_sec_storage");
+                if (oxy_sec_storage) {
+                    oxy_sec_storage->algorithm = SIM_ALGO_LINEAR_GROWTH;
+                    oxy_sec_storage->rate.f = OXY_FILL_RATE;
+                } else {
+                    printf("Simulation tried to access non-existent field 'eva1.oxy_sec_storage' for UIA override\n");
+                }
+
+                //put primary oxygen back on decay
+                sim_field_t* oxy_pri_storage = sim_engine_find_field_within_component(eva1, "oxy_pri_storage");
+                    if (oxy_pri_storage) {
+                        oxy_pri_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
+                        oxy_pri_storage->rate.f = OXY_RATE;
+                    } else {
+                        printf("Simulation tried to access non-existent field 'eva1.oxy_pri_storage' for UIA override\n");
+                    }
+            }
+        } else {
+            //if vent is closed and oxygen EMU1 is closed, make sure that oxygen storage fields are not growing
+            sim_field_t* oxy_pri_storage = sim_engine_find_field_within_component(eva1, "oxy_pri_storage");
+            if (oxy_pri_storage) {
+                if(oxy_pri_storage->algorithm != SIM_ALGO_LINEAR_DECAY) { 
+                    oxy_pri_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
+                    oxy_pri_storage->rate.f = OXY_RATE;
+                }
+                
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.oxy_pri_storage' for UIA override\n");
+            }
+
+            sim_field_t* oxy_sec_storage = sim_engine_find_field_within_component(eva1, "oxy_sec_storage");
+            if (oxy_sec_storage) {
+                if(oxy_sec_storage->algorithm != SIM_ALGO_LINEAR_DECAY) {
+                    oxy_sec_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
+                    oxy_sec_storage->rate.f = OXY_RATE;
+                }
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.oxy_sec_storage' for UIA override\n");
+            }
+        }
+
+        
+        float current_oxy_pressure = 0.0f;
+        //check that current O2 pressure is above 2900 before filling to prevent filling when not supposed to due to a vent open command being sent while suit pressure is still high from a previous fill
+        if(dcu_using_primary_oxygen) {
+            sim_field_t* oxy_pressure = sim_engine_find_field_within_component(eva1, "oxy_pri_pressure");
+            current_oxy_pressure = 0.0f;
+            if (oxy_pressure) {
+                current_oxy_pressure = oxy_pressure->current_value.f;
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.oxy_pri_pressure' for UIA override\n");
+            }
+        } else {
+            sim_field_t* oxy_pressure = sim_engine_find_field_within_component(eva1, "oxy_sec_pressure");
+            current_oxy_pressure = 0.0f;
+            if (oxy_pressure) {
+                current_oxy_pressure = oxy_pressure->current_value.f;
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.oxy_sec_pressure' for UIA override\n");
+            }
+        }
+
+        //fill the suit pressures and O2 pressure until they are both 4
+        //only do so if primary O2 pressure > 2900
+        if(uia_oxy_vent_closed && uia_oxy_emu1_closed && dcu_using_primary_oxygen && current_oxy_pressure > 2900.0f) {
+            sim_field_t* suit_pressure_oxy_field = sim_engine_find_field_within_component(eva1, "suit_pressure_oxy");
+            if (suit_pressure_oxy_field) {
+                if(suit_pressure_oxy_field->current_value.f < 4.0f ) {
+                suit_pressure_oxy_field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+                } else {
+                    suit_pressure_oxy_field->current_value.f = 4.0f;
+                    suit_pressure_oxy_field->algorithm = SIM_ALGO_CONSTANT_VALUE;
+                }
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.suit_pressure_oxy' for UIA override\n");
+            }
+        }
+
+        //make sure that suit_pressure_co2 stays at 0 during the simulation to keep suit_pressure_total just = to suit_pressure_oxy
+        sim_field_t* suit_pressure_co2_field = sim_engine_find_field_within_component(eva1, "suit_pressure_co2");
+        if (suit_pressure_co2_field) {
+            suit_pressure_co2_field->current_value.f = 0.0f;
+            suit_pressure_co2_field->algorithm = SIM_ALGO_CONSTANT_VALUE;
+        } else {
+            printf("Simulation tried to access non-existent field 'eva1.suit_pressure_co2' for UIA override initialization\n");
+        }
+
+        //prep coolant tank
+        //check whether DCU pump is open
+        bool dcu_pump_open = sim_engine->dcu_field_settings->pump == true;
+        
+        //check whether UIA EVA1 valves are open or closed
+        bool uia_supply_water_tank_valve_closed = !sim_engine->uia_field_settings->eva1_water_supply;
+        bool uia_waste_water_tank_valve_open  = sim_engine->uia_field_settings->eva1_water_waste == true;
+        bool uia_supply_water_tank_valve_open = sim_engine->uia_field_settings->eva1_water_supply == true;
+        bool uia_waste_water_tank_valve_closed  = !sim_engine->uia_field_settings->eva1_water_waste;
+        
+        //drain water tank
+        if(dcu_pump_open && uia_supply_water_tank_valve_closed && uia_waste_water_tank_valve_open) {
+            sim_field_t* coolant_storage = sim_engine_find_field_within_component(eva1, "coolant_storage");
+            if (coolant_storage) {
+                coolant_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
+                coolant_storage->rate.f = COOLANT_DRAIN_RATE;
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.coolant_storage' for UIA override\n");
+            }
+        }
+
+        //fill coolant tank
+        else if(dcu_pump_open && uia_supply_water_tank_valve_open && uia_waste_water_tank_valve_closed) {
+            sim_field_t* coolant_storage = sim_engine_find_field_within_component(eva1, "coolant_storage");
+            if (coolant_storage) {
+                    coolant_storage->algorithm = SIM_ALGO_LINEAR_GROWTH;
+                    coolant_storage->rate.f = COOLANT_FILL_RATE;
+                } else {
+                    printf("Simulation tried to access non-existent field 'eva1.coolant_storage' for UIA override\n");
+                }
+        } else {
+            //make coolant storage decrease normally
+            sim_field_t* coolant_storage = sim_engine_find_field_within_component(eva1, "coolant_storage");
+            if (coolant_storage) {
+                    coolant_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
+                    coolant_storage->rate.f = COOLANT_RATE;
+            } else {
+                printf("Simulation tried to access non-existent field 'eva1.coolant_storage' for UIA override\n");
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -75,16 +434,16 @@ void update_EVA_error_simulation_error_states(sim_engine_t* sim_engine) {
 * @param engine Pointer to the simulation engine
 */
 
-void update_remaining_errors(sim_engine_t* engine) {
+void update_num_remaining_errors_LTV(sim_engine_t* engine) {
     if (!engine) {
-        printf("Error: Invalid simulation engine pointer in update_remaining_errors\n");
+        printf("Error: Invalid simulation engine pointer in update_num_remaining_errors_LTV\n");
         return;
     }
 
     //count the number of values in the LTV json file under "errors" that are set to true to indicate that those errors are still being thrown, and update the number of task board errors accordingly
     cJSON* ltv_config = get_json_file("LTV");
     if (!ltv_config) {
-        printf("Error: Failed to load LTV config file in update_remaining_errors\n");
+        printf("Error: Failed to load LTV config file in update_num_remaining_errors_LTV\n");
         return;
     }
 
@@ -117,6 +476,7 @@ void update_remaining_errors(sim_engine_t* engine) {
 * updates the O2 error state based on the current DCU field settings and o2 value.
 * If the DCU command for O2 is set to false, the O2 error state will be set to false (no error).
 * If the O2 error is thrown and the DCU command for O2 is set to true, the O2 error state will be set to true (error present).
+* The function also updates the algorithm and rate for the suit_pressure_oxy field to simulate the consequences of the O2 error based on the current DCU command.
 * @param sim_engine Pointer to the simulation engine to update
 */
 void update_O2_error_state(sim_engine_t* sim_engine) {
@@ -124,7 +484,7 @@ void update_O2_error_state(sim_engine_t* sim_engine) {
         return;
     }
 
-    //check if the O2 error is currently thrown by checking if the algorithm for the O2 storage field is set to rapid linear decay
+    //check if the O2 error is currently thrown by checking if the algorithm for the O2 storage field is set to linear decay
     sim_component_t* eva1 = sim_engine_get_component(sim_engine, "eva1");
     if (eva1 == NULL) {
         printf("Simulation tried to access non-existent component 'eva1' for O2 error state update\n");
@@ -138,35 +498,48 @@ void update_O2_error_state(sim_engine_t* sim_engine) {
     }   
 
     bool o2_error_thrown = (sim_engine->error_type == SUIT_PRESSURE_OXY_LOW || sim_engine->error_type == SUIT_PRESSURE_OXY_HIGH);  
+    bool o2_low_error_thrown = sim_engine->error_type == SUIT_PRESSURE_OXY_LOW;
+    bool o2_high_error_thrown = sim_engine->error_type == SUIT_PRESSURE_OXY_HIGH;
 
-    //update the oxy_error state in the JSON file based on the current error state and DCU command
-    if (sim_engine->dcu_field_settings->o2 == false) {
-        if(o2_error_thrown) {
-            if(field->algorithm == SIM_ALGO_RAPID_LINEAR_DECAY) {
-                field->algorithm = SIM_ALGO_LINEAR_GROWTH_CONSTANT;
-            }
-            if(field->algorithm == SIM_ALGO_RAPID_LINEAR_GROWTH) {
-                field->algorithm = SIM_ALGO_LINEAR_DECAY_CONSTANT;
-            }
-        }
+    //update the oxy_error state and equation in the JSON file based on the current error state and DCU command
+    if (sim_engine->dcu_field_settings->o2 == false) { //on secondary oxygen
+        o2_error_flag = true;
         update_json_file("EVA", "error", "oxy_error", "false");
-        oxy_error_flag = false;
+        if(o2_low_error_thrown) {
+            field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+            field->rate.f = OXY_RATE;
+            field->max_value.f = 4.0f; //nominal suit o2 pressure
+        }
+
+        if(o2_high_error_thrown) {
+            field->algorithm = SIM_ALGO_LINEAR_DECAY;
+            field->rate.f = OXY_RATE;
+            field->min_value.f = 4.0f; //nominal suit o2 pressure
+        }
 
     } else if (o2_error_thrown && sim_engine->dcu_field_settings->o2 == true) {
         update_json_file("EVA", "error", "oxy_error", "true");
-        if(oxy_error_flag == false) {
-            oxy_error_flag = true;
-            if(sim_engine->error_type == SUIT_PRESSURE_OXY_LOW) {
-                field->rapid_algo_initialized = false;
-                field->run_time = 0.0f;
+        //rethrow the error if switched back to primary oxygen while an O2 error is still thrown to simulate the consequences of switching back to primary oxygen with an unresolved O2 error
+        if(o2_low_error_thrown) {
+            field->algorithm = SIM_ALGO_LINEAR_DECAY;
+            field->rate.f = OXY_RATE;
+            field->min_value.f = 0.0f; //allow suit o2 pressure to drop to 0 to simulate a critical low O2 pressure in the suit
+            if(o2_error_flag == true) {
                 throw_O2_suit_pressure_low_error(sim_engine);
-            } else {
-                field->rapid_algo_initialized = false;
-                field->run_time = 0.0f;
-                throw_O2_suit_pressure_high_error(sim_engine);
+                o2_error_flag = false; //reset flag so that error is not thrown again until conditions are met again
             }
         }
-    } else {
+
+        if(o2_high_error_thrown) {
+            field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+            field->rate.f = OXY_RATE;
+            field->max_value.f = 4.2f; //allow suit o2 pressure to rise above nominal to simulate a critical high O2 pressure in the suit
+            if(o2_error_flag == true) {
+                throw_O2_suit_pressure_high_error(sim_engine);
+                o2_error_flag = false; //reset flag so that error is not thrown again until conditions are met again
+            }
+        }
+    } else { 
         update_json_file("EVA", "error", "oxy_error", "false");
     }
 }
@@ -201,20 +574,20 @@ void update_scrubber_state(sim_engine_t* sim_engine) {
     }
 
     if (sim_engine->dcu_field_settings->co2 == true) {
-        scrubber_a_field->algorithm = SIM_ALGO_LINEAR_GROWTH_CONSTANT;
-        scrubber_b_field->algorithm = SIM_ALGO_LINEAR_DECAY_CONSTANT;
+        scrubber_a_field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+        scrubber_b_field->algorithm = SIM_ALGO_LINEAR_DECAY;
     } else {
-        scrubber_a_field->algorithm = SIM_ALGO_LINEAR_DECAY_CONSTANT;
-        scrubber_b_field->algorithm = SIM_ALGO_LINEAR_GROWTH_CONSTANT;
+        scrubber_a_field->algorithm = SIM_ALGO_LINEAR_DECAY;
+        scrubber_b_field->algorithm = SIM_ALGO_LINEAR_GROWTH;
     }
 
     
 
     //if the increasing scrubber co2 storage value is above 30, set suit_pressure_co2 to linear growth, otherwise set it to linear decay
-    if ((scrubber_a_field->algorithm == SIM_ALGO_LINEAR_GROWTH_CONSTANT && scrubber_a_field->current_value.f > 30.0f) || (scrubber_b_field->algorithm == SIM_ALGO_LINEAR_GROWTH_CONSTANT && scrubber_b_field->current_value.f > 30.0f)) {
-        suit_co2_pressure_field->algorithm = SIM_ALGO_LINEAR_GROWTH_CONSTANT;
+    if ((scrubber_a_field->algorithm == SIM_ALGO_LINEAR_GROWTH && scrubber_a_field->current_value.f > 30.0f) || (scrubber_b_field->algorithm == SIM_ALGO_LINEAR_GROWTH && scrubber_b_field->current_value.f > 30.0f)) {
+        suit_co2_pressure_field->algorithm = SIM_ALGO_LINEAR_GROWTH;
     } else {
-        suit_co2_pressure_field->algorithm = SIM_ALGO_LINEAR_DECAY_CONSTANT;
+        suit_co2_pressure_field->algorithm = SIM_ALGO_LINEAR_DECAY;
     } 
 
     //update scrubber_error state in JSON file based on scrubber performance
@@ -230,7 +603,7 @@ void update_scrubber_state(sim_engine_t* sim_engine) {
 * If the DCU command for the fan is set to false, the fan error states will be set to false (no error).
 * If the fan RPM high error is thrown and the DCU command for the fan is set to true, the fan RPM error state will be set to true (error present).
 * If the fan RPM low error is thrown and the DCU command for the fan is set to true, the fan RPM error state will be set to true (error present).
-* The helmet_pressure_CO2 value will build up upon fan error and go back to noral upon fan error resolution
+* The helmet_pressure_CO2 value will build up upon fan error and go back to normal upon fan error resolution
 * @param sim_engine Pointer to the simulation engine to update
 */
 void update_fan_error_state(sim_engine_t* sim_engine) {
@@ -256,21 +629,34 @@ void update_fan_error_state(sim_engine_t* sim_engine) {
         return;
     }
 
-    bool fan_error_thrown = (field->algorithm == SIM_ALGO_RAPID_LINEAR_DECAY || field->algorithm == SIM_ALGO_RAPID_LINEAR_GROWTH);
+    bool fan_error_thrown = (field->algorithm == SIM_ALGO_LINEAR_DECAY || field->algorithm == SIM_ALGO_LINEAR_GROWTH);
+    bool fan_rpm_low_error_thrown = (field->algorithm == SIM_ALGO_LINEAR_DECAY);
+    bool fan_rpm_high_error_thrown = (field->algorithm == SIM_ALGO_LINEAR_GROWTH);
+
     //update the fan_error state in the JSON file based on the current error state and DCU command
-    if (sim_engine->dcu_field_settings->fan == false) {
-        if(fan_error_thrown && fan_error_flag) {
-            field_helmet_pressure_co2->algorithm = SIM_ALGO_LINEAR_DECAY_CONSTANT;
-        }
+    if (sim_engine->dcu_field_settings->fan == false) { //on backup fan
+        fan_error_flag = false; //reset fan error flag when switching to backup fan to allow errors to be thrown again if switch back to primary fan with an error condition
         update_json_file("EVA", "error", "fan_error", "false");
-        if(field_helmet_pressure_co2->algorithm == SIM_ALGO_RAPID_LINEAR_GROWTH) {
-                field_helmet_pressure_co2->algorithm = SIM_ALGO_LINEAR_DECAY_CONSTANT;
-            }
+        if(fan_error_thrown) {
+            field_helmet_pressure_co2->algorithm = SIM_ALGO_LINEAR_DECAY;
+            field_helmet_pressure_co2->rate.f = CO2_RATE;
+        }
     } else if (fan_error_thrown && sim_engine->dcu_field_settings->fan == true) {
-        fan_error_flag = true;
         update_json_file("EVA", "error", "fan_error", "true");
-        //set the field algorithm to linear growth constant
-        field_helmet_pressure_co2->algorithm = SIM_ALGO_LINEAR_GROWTH_CONSTANT;
+        if(fan_rpm_low_error_thrown) {
+            if(fan_error_flag == true) {
+                throw_O2_suit_pressure_low_error(sim_engine);
+                o2_error_flag = false; //reset flag so that error is not thrown again until conditions are met again
+            }
+        }
+
+        if(fan_rpm_high_error_thrown) {
+            if(fan_error_flag == true) {
+                throw_O2_suit_pressure_high_error(sim_engine);
+                o2_error_flag = false; //reset flag so that error is not thrown again until conditions are met again
+            }
+        }
+
     } else {
         update_json_file("EVA", "error", "fan_error", "false");
     }
@@ -323,7 +709,6 @@ void update_error_states(sim_engine_t* sim_engine) {
 
     update_EVA_error_simulation_error_states(sim_engine);
     update_scrubber_state(sim_engine);
-    update_sim_DCU_field_settings(sim_engine);
 }
 
 /**
@@ -340,19 +725,33 @@ void increment_simulation(struct backend_data_t *backend) {
         time_incremented = true;
     }
 
+    
+
     // Update simulation engine once per second
     if (time_incremented) {
 
-        // Update simulation engine with elapsed time
-        float delta_time = 1.0f;  // 1 second per update
-        if (backend->sim_engine) {
+        // if UIA is connected, update the simulation values based on UIA states and ingress/egress procedures
+        if(backend->sim_engine) {
+           
+            
+
+            // Update simulation engine with elapsed time
+            float delta_time = 1.0f;  // 1 second per update
+
             //update simulation engine DCU field settings based on the new values received from UDP commands
-            sim_engine_update(backend->sim_engine, delta_time);
+            
+            update_sim_DCU_field_settings(backend->sim_engine);
+            update_sim_UIA_field_settings(backend->sim_engine);
+            update_sim_active_states(backend->sim_engine);
             update_error_states(backend->sim_engine);
-            update_remaining_errors(backend->sim_engine);
+            update_sim_UIA_connected(backend->sim_engine);
+            sim_engine_update(backend->sim_engine, delta_time);
+            update_num_remaining_errors_LTV(backend->sim_engine);
+            
+
+            // Update EVA station timing
+            update_eva_station_timing();
         }
-        // Update EVA station timing
-        update_eva_station_timing();
     }
 }
 
@@ -978,6 +1377,52 @@ bool html_form_json_update(char* request_content, struct backend_data_t* backend
         printf("Error: Invalid route format: %s\n", route);
         return false;
     }
+}
+
+/**
+* Updates sim_UIA_field_settings based on the current state of the UIA station
+* @param sim_engine Pointer to the simulation engine
+*/
+void update_sim_UIA_field_settings(sim_engine_t* sim_engine) {
+    if (!sim_engine || !sim_engine->uia_field_settings) {
+        return;
+    }
+
+    sim_UIA_field_settings_t* settings = sim_engine->uia_field_settings;
+
+    // Update eva1_power setting
+    settings->eva1_power = (get_field_from_json("EVA", "uia.eva1_power", 0.0) == 1.0);
+
+    // Update eva2_power setting
+    settings->eva2_power = (get_field_from_json("EVA", "uia.eva2_power", 0.0) == 1.0);
+
+    // Update eva1_oxy setting
+    settings->eva1_oxy = (get_field_from_json("EVA", "uia.eva1_oxy", 0.0) == 1.0);
+
+    // Update eva2_oxy setting
+    settings->eva2_oxy = (get_field_from_json("EVA", "uia.eva2_oxy", 0.0) == 1.0);
+
+    // Update eva1_water_supply setting
+    settings->eva1_water_supply = (get_field_from_json("EVA", "uia.eva1_water_supply", 0.0) == 1.0);
+
+    // Update eva2_water_supply setting
+    settings->eva2_water_supply = (get_field_from_json("EVA", "uia.eva2_water_supply", 0.0) == 1.0);
+
+    // Update eva1_water_waste setting
+    settings->eva1_water_waste = (get_field_from_json("EVA", "uia.eva1_water_waste", 0.0) == 1.0);
+
+    // Update eva2_water_waste setting
+    settings->eva2_water_waste = (get_field_from_json("EVA", "uia.eva2_water_waste", 0.0) == 1.0);
+
+    // Update oxy_vent setting
+    settings->oxy_vent = (get_field_from_json("EVA", "uia.oxy_vent", 0.0) == 1.0);
+
+    //Update depress setting
+    settings->depress = (get_field_from_json("EVA", "uia.depress", 0.0) == 1.0);
+
+
+
+    
 }
 
 /**

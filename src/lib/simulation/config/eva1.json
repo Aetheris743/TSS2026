@@ -4,31 +4,35 @@
     "primary_battery_level": {
       "type": "float",
       "algorithm": "linear_decay",
-      "start_value": 100,
-      "end_value": 0,
-      "duration_seconds": 20
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "rate": 0.05,
+      "start_value": 100.0
+      
     },
     "secondary_battery_level": {
       "type": "float",
       "algorithm": "linear_decay",
-      "start_value": 100,
-      "end_value": 0,
-      "duration_seconds": 2000
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "rate": 0.05,
+      "start_value": 100.0
     },
     "oxy_pri_storage": {
       "type": "float",
       "algorithm": "linear_decay",
-      "start_value": 100,
-      "end_value": 0,
-      "duration_seconds": 2500,
-      "rapid_duration_seconds": 20
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "rate": 0.1,
+      "start_value": 100.0
     },
     "oxy_sec_storage": {
       "type": "float",
       "algorithm": "linear_decay",
-      "start_value": 100,
-      "end_value": 0,
-      "duration_seconds": 2500
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "rate": 0.1,
+      "start_value": 100.0
     },
     "oxy_pri_pressure": {
       "type": "float",
@@ -66,32 +70,24 @@
       "base_value": 4.0,
       "amplitude": 0.08,
       "frequency": 0.012,
-      "max_value": 6.0,
-      "end_value_constant_decay": 4.0,
-      "end_value_constant_growth": 4.0,
-      "end_value": 0,
-      "rapid_duration_seconds": 20,
-      "growth_rate": 0.1
+      "min_value": 3.0,
+      "max_value": 4.2,
+      "rate": 0.1
 
     },
     "suit_pressure_co2": {
       "type": "float",
-      "algorithm": "linear_growth_constant",
-      "end_value_constant_decay": 0.0,
-      "end_value_constant_growth": 0.1,
-      "end_value": 0.1,
-      "start_value": 0.0,
-      "end_value_constant": 0.0,
-      "duration_seconds": 900,
-      "growth_rate": 0.005,
-      "decay_rate": 0.005
+      "algorithm": "linear_growth",
+      "min_value": 0.0,
+      "max_value": 0.2,
+      "start_value": 0.0
     },
     "suit_pressure_other": {
       "type": "float",
-      "algorithm": "linear_decay",
-      "start_value": 0,
-      "end_value": 0,
-      "duration_seconds": 900
+      "algorithm": "constant_value",
+      "min_value": 0.0,
+      "max_value": 0.1,
+      "start_value": 0.0
     },
     "suit_pressure_total": {
       "type": "float",
@@ -109,9 +105,8 @@
       "base_value": 30000.0,
       "amplitude": 0.0,
       "frequency": 0.003,
-      "rapid_growth_rate": 50.0,
-      "max_value": 35000.0,
-      "rapid_duration_seconds": 20
+      "min_value": 0.0,
+      "max_value": 30500.0
     },
     "fan_sec_rpm": {
       "type": "float",
@@ -119,55 +114,48 @@
       "base_value": 30000.0,
       "amplitude": 0.0,
       "frequency": 0.003,
-      "rapid_growth_rate": 50.0,
-      "max_value": 35000.0,
-      "rapid_duration_seconds": 20
+      "min_value": 0.0,
+      "max_value": 30500.0
     },
     "helmet_pressure_co2": {
       "type": "float",
       "algorithm": "dependent_value",
+      "min_value": 0.0,
       "formula": "suit_pressure_co2 * 1.5",
-      "decay_rate": 0.005,
-      "end_value_constant_decay": 0.0,
-      "end_value_constant_growth": 0.3,
-      "growth_rate": 0.005,
       "depends_on": ["suit_pressure_co2"]
     },
     "scrubber_a_co2_storage": {
       "type": "float",
-      "algorithm": "linear_growth_constant",
-      "start_value": 0,
-      "end_value": 0.0,
-      "growth_rate": 0.33,
-      "end_value_constant_decay": 0.0,
-      "end_value_constant_growth": 70.0,
-      "decay_rate": 0.33,
-      "duration_seconds": 100
+      "algorithm": "linear_growth",
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "start_value": 0.0,
+      "rate": 0.13
     },
     "scrubber_b_co2_storage": {
       "type": "float",
-      "algorithm": "linear_decay_constant",
-      "start_value": 0,
-      "end_value": 0.0,
-      "growth_rate": 0.33,
-      "end_value_constant_decay": 0.0,
-      "end_value_constant_growth": 70.0,
-      "decay_rate": 0.33,
-      "duration_seconds": 100
+      "algorithm": "linear_growth",
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "start_value": 0.0,
+      "rate": 0.23
     },
     "temperature": {
       "type": "float",
       "algorithm": "sine_wave",
       "base_value": 21.1,
       "amplitude": 5.1,
-      "frequency": 0.018
+      "frequency": 0.018,
+      "min_value": -10.0,
+      "max_value": 40.0
     },
     "coolant_storage": {
       "type": "float",
       "algorithm": "linear_decay",
-      "start_value": 100,
-      "end_value": 100,
-      "duration_seconds": 900
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "start_value": 100.0,
+      "rate": 0.05
     },
     "coolant_gas_pressure": {
       "type": "float",
@@ -180,15 +168,17 @@
       "algorithm": "sine_wave",
       "base_value": 500,
       "amplitude": 2,
-      "frequency": 0.015
+      "frequency": 0.015,
+      "min_value": 480.0,
+      "max_value": 520.0
+
     },
     "eva_elapsed_time": {
       "type": "float",
       "algorithm": "linear_growth",
-      "start_value": 0,
-      "end_value": 1350,
-      "duration_seconds": 1350.0,
-      "reset_value": 0
+      "min_value": 0.0,
+      "max_value": 10000.0,
+      "start_value": 0.0
     }
   }
 }

@@ -53,8 +53,8 @@ bool throw_random_error(sim_engine_t* engine) {
 }
 
 /**
- * Rapidly decreases O2 pressure to simulate a leak.
- * Pressure will drop according to rapid linear decay algorithm.
+ * Quickly decreases O2 pressure to simulate a leak.
+ * Pressure will drop according to linear decay algorithm.
  * Will update UI and JSON files accordingly.
  * @param engine Pointer to the simulation engine
  * @return bool indicating success or failure
@@ -67,26 +67,25 @@ bool throw_O2_suit_pressure_low_error(sim_engine_t* engine) {
             return false;
         }
 
-    //set the field start_time to 0 so the rapid decay starts from the current value at the time of error
+    //set the field algorithm to linear decrease
     sim_field_t* field = sim_engine_find_field_within_component(eva1, "suit_pressure_oxy");
     if (field) {
-        field->start_time = 0.0f; //restart the timer for the rapid linear growth algorithm so it starts growing from the current value at the time of error
-        field->active = true; //make the field active so it starts updating based on the new algorithm
+        if(engine->dcu_field_settings->o2 == true) {
+            field->algorithm = SIM_ALGO_LINEAR_DECAY;
+            field->rate.f = 0.1f; //set a high decay rate to simulate a rapid pressure drop
+        }
     } else {
         printf("Simulation tried to access non-existent field 'suit_pressure_oxy' for O2 storage error\n");
         return false;
     }
-
-    //set the field algorithm to rapid linear decrease
-    field->algorithm = SIM_ALGO_RAPID_LINEAR_DECAY;
-    printf("O2 suit pressure low error thrown: rapidly decreasing O2 pressure\n");
+    printf("O2 suit pressure low error thrown: quickly decreasing O2 pressure\n");
 
     return true;
 }
 
 /**
- * Rapidly increases O2 pressure to simulate a leak.
- * Pressure will increase according to rapid linear decay algorithm.
+ * Quickly increases O2 pressure to simulate a leak.
+ * Pressure will increase according to linear growth algorithm.
  * Will update UI and JSON files accordingly.
  * @param engine Pointer to the simulation engine
  * @return bool indicating success or failure
@@ -99,27 +98,26 @@ bool throw_O2_suit_pressure_high_error(sim_engine_t* engine) {
             return false;
         }
 
-    //set the field start_time to 0 so the rapid decay starts from the current value at the time of error
+    //set the field algorithm to linear growth
     sim_field_t* field = sim_engine_find_field_within_component(eva1, "suit_pressure_oxy");
     if (field) {
-        field->start_time = 0.0f; //restart the timer for the rapid linear growth algorithm so it starts growing from the current value at the time of error
-        field->active = true; //make the field active so it starts updating based on the new algorithm
+        if(engine->dcu_field_settings->o2 == true) {
+            field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+            field->rate.f = 0.1f; //set a high growth rate to simulate a rapid pressure increase
+        }
     } else {
         printf("Simulation tried to access non-existent field 'suit_pressure_oxy' for O2 storage error\n");
         return false;
     }
-
-    //set the field algorithm to rapid linear decrease
-    field->algorithm = SIM_ALGO_RAPID_LINEAR_GROWTH;
-    printf("O2 suit pressure high error thrown: rapidly increasing O2 pressure\n");
+    printf("O2 suit pressure high error thrown: quickly increasing O2 pressure\n");
 
     return true;
 }
 
 
 /**
- * Rapidly increases fan RPM to simulate a malfunction.
- * Fan RPM will increase according to rapid linear growth algorithm.
+ * Quickly increases fan RPM to simulate a malfunction.
+ * Fan RPM will increase according to linear growth algorithm.
  * Will update UI and JSON files accordingly.
  * @param engine Pointer to the simulation engine
  * @return bool indicating success or failure
@@ -133,25 +131,34 @@ bool throw_fan_RPM_high_error(sim_engine_t* engine) {
         return false;
     }
 
-    //set the field start_time to 0 so the rapid growth starts from the current value at the time of error
+
+    //set the field algorithm to linear growth
     sim_field_t* field = sim_engine_find_field_within_component(eva1, "fan_pri_rpm");
     if (field) {
-        field->start_time = 0.0f;  //restart the timer for the rapid linear growth algorithm so it starts growing from the current value at the time of error
-        field->active = true; //make the field active so it starts updating based on the new algorithm
+        field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+        field->rate.f = 10.0f; //set a high growth rate to simulate a rapid RPM increase
     } else {
         printf("Simulation tried to access non-existent field 'fan_pri_rpm' for fan RPM high error\n");
         return false;
     }
 
-    //set the field algorithm to rapid linear growth
-    field->algorithm = SIM_ALGO_RAPID_LINEAR_GROWTH;
-    printf("Fan RPM high error thrown. Algorithm set to SIM_ALGO_RAPID_LINEAR_GROWTH for field 'fan_pri_rpm'\n");
+    //set the helmet co2 pressure to increase as well to simulate the effect of the fan malfunction on the suit environment
+    sim_field_t* field_helmet_pressure_co2 = sim_engine_find_field_within_component(eva1, "helmet_pressure_co2");
+    if (field_helmet_pressure_co2) {
+        field_helmet_pressure_co2->algorithm = SIM_ALGO_LINEAR_GROWTH;
+        field_helmet_pressure_co2->rate.f = CO2_RATE;
+    } else {        
+        printf("Simulation tried to access non-existent field 'helmet_pressure_co2' for fan RPM high error\n");
+        return false;
+    }
+
+    printf("Fan RPM high error thrown. Algorithm set to SIM_ALGO_LINEAR_GROWTH for field 'fan_pri_rpm'\n");
     return true;
 }
 
 /**
- * Rapidly decreases fan RPM to simulate a malfunction.
- * Fan RPM will drop according to rapid linear decay algorithm.
+ * Quickly decreases fan RPM to simulate a malfunction.
+ * Fan RPM will drop according to linear decay algorithm.
  * Will update UI and JSON files accordingly.
  * @param engine Pointer to the simulation engine
  * @return bool indicating success or failure
@@ -165,18 +172,27 @@ bool throw_fan_RPM_low_error(sim_engine_t* engine) {
         return false;
     }
 
-    //set the field start_time to 0 so the rapid decay starts from the current value at the time of error
+    //set the field algorithm to linear decay
     sim_field_t* field = sim_engine_find_field_within_component(eva1, "fan_pri_rpm");
     if (field) {
-        field->start_time = 0.0f; //restart the timer for the rapid decay algorithm so it starts decaying from the current value at the time of error
+        field->algorithm = SIM_ALGO_LINEAR_DECAY;
+        field->rate.f = 10.0f; //set a high decay rate to simulate a rapid RPM decrease
     } else {
         printf("Simulation tried to access non-existent field 'fan_pri_rpm' for fan RPM low error\n");
         return false;
     }
 
-    //set the field algorithm to rapid linear decay
-    field->algorithm = SIM_ALGO_RAPID_LINEAR_DECAY;
-    printf("Fan RPM low error thrown. Algorithm set to SIM_ALGO_RAPID_LINEAR_DECAY for field 'fan_pri_rpm'\n");
+    //set the helmet co2 pressure to increase as well to simulate the effect of the fan malfunction on the suit environment
+    sim_field_t* field_helmet_pressure_co2 = sim_engine_find_field_within_component(eva1, "helmet_pressure_co2");
+    if (field_helmet_pressure_co2) {
+        field_helmet_pressure_co2->algorithm = SIM_ALGO_LINEAR_GROWTH;
+        field_helmet_pressure_co2->rate.f = CO2_RATE;
+    } else {        
+        printf("Simulation tried to access non-existent field 'helmet_pressure_co2' for fan RPM low error\n");
+        return false;
+    }
+
+    printf("Fan RPM low error thrown. Algorithm set to SIM_ALGO_LINEAR_DECAY for field 'fan_pri_rpm'\n");
     return true;
 }
 
