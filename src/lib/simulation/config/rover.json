@@ -125,7 +125,8 @@
       "algorithm": "linear_decay",
       "start_value": 100.0,
       "end_value": 20.0,
-      "duration_seconds": 2000.0
+      "duration_seconds": 2000.0,
+      "rate": 0.04
     },
     "oxygen_pressure": {
       "type": "float",
