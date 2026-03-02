@@ -78,7 +78,8 @@
       "algorithm": "linear_growth",
       "min_value": 0.0,
       "max_value": 0.2,
-      "start_value": 0.0
+      "start_value": 0.0,
+      "rate": 0.001
     },
     "suit_pressure_other": {
       "type": "float",
@@ -99,21 +100,19 @@
     },
     "fan_pri_rpm": {
       "type": "float",
-      "algorithm": "sine_wave",
-      "base_value": 30000.0,
-      "amplitude": 0.0,
-      "frequency": 0.003,
+      "algorithm": "constant_value",
+      "start_value": 30000.0,
       "min_value": 0.0,
-      "max_value": 30500.0
+      "max_value": 30500.0,
+      "rate": 10.0
     },
     "fan_sec_rpm": {
       "type": "float",
-      "algorithm": "sine_wave",
-      "base_value": 30000.0,
-      "amplitude": 0.0,
-      "frequency": 0.003,
+      "algorithm": "constant_value",
+      "start_value": 30000.0,
       "min_value": 0.0,
-      "max_value": 30500.0
+      "max_value": 30500.0,
+      "rate": 10.0
     },
     "helmet_pressure_co2": {
       "type": "float",
@@ -136,7 +135,7 @@
       "min_value": 0.0,
       "max_value": 100.0,
       "start_value": 0.0,
-      "rate": 0.23
+      "rate": 0.13
     },
     "temperature": {
       "type": "float",
@@ -176,7 +175,8 @@
       "algorithm": "linear_growth",
       "min_value": 0.0,
       "max_value": 10000.0,
-      "start_value": 0.0
+      "start_value": 0.0,
+      "rate": 1.0
     }
   }
 }

@@ -43,8 +43,6 @@ bool throw_random_error(sim_engine_t* engine) {
             return throw_O2_suit_pressure_low_error(engine);
         case SUIT_PRESSURE_OXY_HIGH:
             return throw_O2_suit_pressure_high_error(engine);
-        case FAN_RPM_HIGH:
-            return throw_fan_RPM_high_error(engine);
         case FAN_RPM_LOW:
             return throw_fan_RPM_low_error(engine);
         default:
@@ -116,47 +114,6 @@ bool throw_O2_suit_pressure_high_error(sim_engine_t* engine) {
 
 
 /**
- * Quickly increases fan RPM to simulate a malfunction.
- * Fan RPM will increase according to linear growth algorithm.
- * Will update UI and JSON files accordingly.
- * @param engine Pointer to the simulation engine
- * @return bool indicating success or failure
- * 
-*/
-bool throw_fan_RPM_high_error(sim_engine_t* engine) {
-
-    sim_component_t* eva1 = sim_engine_get_component(engine, "eva1");
-    if (eva1 == NULL) {
-        printf("Simulation tried to access non-existent component 'eva1' for fan RPM high error\n");
-        return false;
-    }
-
-
-    //set the field algorithm to linear growth
-    sim_field_t* field = sim_engine_find_field_within_component(eva1, "fan_pri_rpm");
-    if (field) {
-        field->algorithm = SIM_ALGO_LINEAR_GROWTH;
-        field->rate.f = 10.0f; //set a high growth rate to simulate a rapid RPM increase
-    } else {
-        printf("Simulation tried to access non-existent field 'fan_pri_rpm' for fan RPM high error\n");
-        return false;
-    }
-
-    //set the helmet co2 pressure to increase as well to simulate the effect of the fan malfunction on the suit environment
-    sim_field_t* field_helmet_pressure_co2 = sim_engine_find_field_within_component(eva1, "helmet_pressure_co2");
-    if (field_helmet_pressure_co2) {
-        field_helmet_pressure_co2->algorithm = SIM_ALGO_LINEAR_GROWTH;
-        field_helmet_pressure_co2->rate.f = CO2_RATE;
-    } else {        
-        printf("Simulation tried to access non-existent field 'helmet_pressure_co2' for fan RPM high error\n");
-        return false;
-    }
-
-    printf("Fan RPM high error thrown. Algorithm set to SIM_ALGO_LINEAR_GROWTH for field 'fan_pri_rpm'\n");
-    return true;
-}
-
-/**
  * Quickly decreases fan RPM to simulate a malfunction.
  * Fan RPM will drop according to linear decay algorithm.
  * Will update UI and JSON files accordingly.
@@ -195,4 +152,6 @@ bool throw_fan_RPM_low_error(sim_engine_t* engine) {
     printf("Fan RPM low error thrown. Algorithm set to SIM_ALGO_LINEAR_DECAY for field 'fan_pri_rpm'\n");
     return true;
 }
+
+
 

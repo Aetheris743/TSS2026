@@ -120,7 +120,7 @@
       "field_path": "pr_telemetry.surface_incline",
       "reset_value": 0
     },
-    "oxygen_tank": {
+    "oxygen_storage": {
       "type": "float",
       "algorithm": "linear_decay",
       "start_value": 100.0,
@@ -130,22 +130,8 @@
     "oxygen_pressure": {
       "type": "float",
       "algorithm": "dependent_value",
-      "formula": "oxygen_tank * 30.0",
-      "depends_on": ["oxygen_tank"]
-    },
-    "fan_pri_rpm": {
-      "type": "float",
-      "algorithm": "sine_wave",
-      "base_value": 30000.0,
-      "amplitude": 3.0,
-      "frequency": 0.003
-    },
-    "fan_sec_rpm": {
-      "type": "float",
-      "algorithm": "sine_wave",
-      "base_value": 30000.0,
-      "amplitude": 3.0,
-      "frequency": 0.0025
+      "formula": "oxygen_storage * 30.0",
+      "depends_on": ["oxygen_storage"]
     },
     "cabin_pressure": {
       "type": "float",
@@ -156,15 +142,18 @@
     },
     "cabin_temperature": {
       "type": "float",
+      "algorithm": "linear_growth",
+      "start_value": 0,
+      "max_value": 50.0,
+      "min_value": -50,
+      "rate": 0.1
+      
+    },
+    "cabin_temperature_target": {
+      "type": "float",
       "algorithm": "dependent_value",
       "formula": "external_temp * 0.15 + cabin_heating * 15.0 - cabin_cooling * 10.0 + 20.0",
       "depends_on": ["external_temp", "cabin_heating", "cabin_cooling"]
-    },
-    "battery_level": {
-      "type": "float",
-      "algorithm": "dependent_value",
-      "formula": "100.0 - rover_elapsed_time * ( 0.02857 + speed * 0.00508 )",
-      "depends_on": ["rover_elapsed_time", "speed"]
     },
     "external_temp": {
       "type": "float",
@@ -185,11 +174,23 @@
       "amplitude": 1.0,
       "frequency": 0.01
     },
+    "primary_battery_level": {
+      "type": "float",
+      "algorithm": "dependent_value",
+      "formula": "100.0 - rover_elapsed_time * ( 0.02857 + speed * 0.00508 )",
+      "depends_on": ["rover_elapsed_time", "speed"]
+    },
+    "secondary_battery_level": {
+      "type": "float",
+      "algorithm": "constant_value",
+      "value": 100.0
+    },
     "rover_elapsed_time": {
       "type": "float",
       "algorithm": "linear_growth",
       "start_value": 0,
-      "max_value": 100000.0
+      "max_value": 100000.0,
+      "rate": 1.0
     },
     "signal_strength": {
       "type": "float",

@@ -51,7 +51,7 @@ void update_EVA_error_simulation_error_states(sim_engine_t* sim_engine);
 void update_O2_error_state(sim_engine_t* sim_engine);
 void update_fan_error_state(sim_engine_t* sim_engine);
 void update_power_error_state(sim_engine_t* sim_engine);
-void update_scrubber_state(sim_engine_t* sim_engine);
+void update_scrubber_state_EVA(sim_engine_t* sim_engine);
 void update_num_remaining_errors_LTV(sim_engine_t* engine);
 
 //UIA related functions

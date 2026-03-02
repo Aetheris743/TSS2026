@@ -120,6 +120,39 @@ bool is_UIA_connected(sim_engine_t* sim_engine) {
 }
 
 /**
+* Updates fan values if on or not based on DCU state
+* If the DCU command for the fan is set to true, the fan value will be set to 30000.0 when turned on.
+* If the DCU command for the fan is set to false, the fan value will be set to 0.0 when turned off.
+* @param sim_engine Pointer to the simulation engine to update
+*/
+void update_fan_values(sim_engine_t* sim_engine) {
+    if (!sim_engine) {
+        return;
+    }
+
+    sim_component_t* eva1 = sim_engine_get_component(sim_engine, "eva1");
+    if (eva1 == NULL) {
+        printf("Simulation tried to access non-existent component 'eva1' for fan value update\n");
+        return;
+    }
+
+    sim_field_t* fan_pri_rpm_field = sim_engine_find_field_within_component(eva1, "fan_pri_rpm");
+    sim_field_t* fan_sec_rpm_field = sim_engine_find_field_within_component(eva1, "fan_sec_rpm");
+
+    if (fan_pri_rpm_field && fan_sec_rpm_field) {
+        if (sim_engine->dcu_field_settings->fan) {
+            fan_pri_rpm_field->current_value.f = 30000.0f;
+            fan_sec_rpm_field->current_value.f = 0.0f;
+        } else {
+            fan_pri_rpm_field->current_value.f = 0.0f;
+            fan_sec_rpm_field->current_value.f = 30000.0f;
+        }
+    } else {
+        printf("Simulation tried to access non-existent field 'eva1.fan_pri_rpm' or 'eva1.fan_sec_rpm' for fan value update\n");
+    }
+}
+
+/**
 * Updates active states of all applicable fields based on whether UIA is connected and the current DCU command settings
 * @param sim_engine Pointer to the simulation engine to update
  */
@@ -145,7 +178,8 @@ bool is_UIA_connected(sim_engine_t* sim_engine) {
         
         field->active = true; //set all fields to active by default, then set to false if they depend on a DCU command that is not active
 
-        //set active to true by default, will be set to false for fields that depend on DCU commands until the correct command is received
+        if(component && strncmp(component->component_name, "eva", 3) == 0) { //if the field is within an EVA component, check DCU command dependencies to determine active state
+        //set active to true by default, will be set to false for ***EVA*** fields that depend on DCU commands until the correct command is received
         if(strncmp(field->field_name, "primary_battery_level", 21) == 0 && !(sim_engine->dcu_field_settings->battery_lu == false && sim_engine->dcu_field_settings->battery_ps == true)) {
             field->active = false;
         } else if(strncmp(field->field_name, "secondary_battery_level", 23) == 0 && !(sim_engine->dcu_field_settings->battery_lu == false && sim_engine->dcu_field_settings->battery_ps == false)) {
@@ -169,11 +203,12 @@ bool is_UIA_connected(sim_engine_t* sim_engine) {
             field->active = true;
         } else if((sim_engine->error_type == SUIT_PRESSURE_OXY_HIGH) && (strcmp(field->field_name, "oxy_pri_storage") == 0)) {
             field->active = true;
-        } else if((sim_engine->error_type == FAN_RPM_HIGH) && (strcmp(field->field_name, "fan_pri_rpm") == 0)) {
-            field->active = true;
         } else if((sim_engine->error_type == FAN_RPM_LOW) && (strcmp(field->field_name, "fan_pri_rpm") == 0)) {
             field->active = true;
         }
+    }
+
+
     }
 
 
@@ -199,6 +234,63 @@ bool is_UIA_connected(sim_engine_t* sim_engine) {
             }
         }
     }
+}
+
+
+/**
+* Adjusts cabin temperature based on Cabin Heating and Cabin Cooling commands and updates JSON file accordingly
+* @param sim_engine Pointer to the simulation engine to update
+*/
+
+void cabin_temperature_control(sim_engine_t* sim_engine) {
+    if (!sim_engine) {
+         return;
+     }
+
+    sim_component_t* rover = sim_engine_get_component(sim_engine, "rover");
+    if (rover == NULL) {
+        printf("Simulation tried to access non-existent component 'rover' for cabin temperature control\n");
+         return;
+    }
+
+    sim_field_t* cabin_temperature_field = sim_engine_find_field_within_component(rover, "cabin_temperature");
+    if (cabin_temperature_field == NULL) {
+        printf("Simulation tried to access non-existent field 'rover.cabin_temperature' for cabin temperature control\n");
+         return;
+    }
+
+    sim_field_t* cabin_temperature_target_field = sim_engine_find_field_within_component(rover, "cabin_temperature_target");
+    if (cabin_temperature_target_field == NULL) {
+        printf("Simulation tried to access non-existent field 'rover.cabin_temperature_target' for cabin temperature control\n");
+         return;
+    }
+
+    sim_field_t* cabin_heating = sim_engine_find_field_within_component(rover, "cabin_heating");
+    if (cabin_heating == NULL) {
+        printf("Simulation tried to access non-existent field 'rover.cabin_heating' for cabin temperature control\n");
+         return;
+    }
+
+    sim_field_t* cabin_cooling = sim_engine_find_field_within_component(rover, "cabin_cooling");
+    if (cabin_cooling == NULL) {
+        printf("Simulation tried to access non-existent field 'rover.cabin_cooling' for cabin temperature control\n");
+         return;
+    }
+
+    //check if the current temperature is above or below the target temperature
+    if (cabin_temperature_field->current_value.f < cabin_temperature_target_field->current_value.f) { //below target
+        //decrease temperature by setting algorithm to linear decay until it reaches the target temperature, then set to constant value to keep it at the target temperature
+        cabin_temperature_field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+        cabin_temperature_field->max_value.f = cabin_temperature_target_field->current_value.f;
+    } else if (cabin_temperature_field->current_value.f > cabin_temperature_target_field->current_value.f) { //above target
+        cabin_temperature_field->algorithm = SIM_ALGO_LINEAR_DECAY;
+        cabin_temperature_field->min_value.f = cabin_temperature_target_field->current_value.f;
+    } else {
+        cabin_temperature_field->algorithm = SIM_ALGO_CONSTANT_VALUE;
+        cabin_temperature_field->current_value.f = cabin_temperature_target_field->current_value.f; //at target, set current value to target value to avoid any floating point discrepancies
+    }
+
+
 }
 
 /**
@@ -545,7 +637,7 @@ void update_O2_error_state(sim_engine_t* sim_engine) {
 }
 
 /**
-* switches between which scrubber is increasing linearly and decreasing linearly based on the current DCU command for CO2 scrubber.
+* switches between which EVA scrubber is increasing linearly and decreasing linearly based on the current DCU command for CO2 scrubber.
 * also switches whether suit_pressure_co2 is increasing or decreasing based on scrubber value and DCU command, to simulate the relationship between CO2 scrubber performance and suit CO2 pressure.
 * If the DCU command for CO2 scrubber is set to true, scrubber_a_co2_storage will be set to linear_growth and scrubber_b_co2_storage will be set to linear_decay.
 * If the DCU command for CO2 scrubber is set to false, scrubber_a_co2_storage will be set to linear_decay and scrubber_b_co2_storage will be set to linear_growth.
@@ -553,7 +645,7 @@ void update_O2_error_state(sim_engine_t* sim_engine) {
 * If the increasing scrubber co2 storage value is below 30, the suit_pressure_co2 field will be set to linear_decay, simulating effective CO2 scrubbing and a decrease in suit CO2 pressure.
 * @param sim_engine Pointer to the simulation engine to update
 */
-void update_scrubber_state(sim_engine_t* sim_engine) {
+void update_scrubber_state_EVA(sim_engine_t* sim_engine) {
     if (!sim_engine) {
         return;
     }
@@ -567,6 +659,61 @@ void update_scrubber_state(sim_engine_t* sim_engine) {
     sim_field_t* scrubber_a_field = sim_engine_find_field_within_component(eva1, "scrubber_a_co2_storage");
     sim_field_t* scrubber_b_field = sim_engine_find_field_within_component(eva1, "scrubber_b_co2_storage");
     sim_field_t* suit_co2_pressure_field = sim_engine_find_field_within_component(eva1, "suit_pressure_co2");
+
+    if (scrubber_a_field == NULL || scrubber_b_field == NULL || suit_co2_pressure_field == NULL) {
+        printf("Simulation tried to access non-existent scrubber or suit pressure fields for scrubber error state update\n");
+        return;
+    }
+
+    if (sim_engine->dcu_field_settings->co2 == true) {
+        scrubber_a_field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+        scrubber_b_field->algorithm = SIM_ALGO_LINEAR_DECAY;
+    } else {
+        scrubber_a_field->algorithm = SIM_ALGO_LINEAR_DECAY;
+        scrubber_b_field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+    }
+
+    
+
+    //if the increasing scrubber co2 storage value is above 30, set suit_pressure_co2 to linear growth, otherwise set it to linear decay
+    if ((scrubber_a_field->algorithm == SIM_ALGO_LINEAR_GROWTH && scrubber_a_field->current_value.f > 30.0f) || (scrubber_b_field->algorithm == SIM_ALGO_LINEAR_GROWTH && scrubber_b_field->current_value.f > 30.0f)) {
+        suit_co2_pressure_field->algorithm = SIM_ALGO_LINEAR_GROWTH;
+    } else {
+        suit_co2_pressure_field->algorithm = SIM_ALGO_LINEAR_DECAY;
+    } 
+
+    //update scrubber_error state in JSON file based on scrubber performance
+    if ((scrubber_a_field->current_value.f > 60.0f && sim_engine->dcu_field_settings->co2 == true) || (scrubber_b_field->current_value.f > 60.0f && sim_engine->dcu_field_settings->co2 == false)) {
+        update_json_file("EVA", "error", "scrubber_error", "true");
+    } else {
+        update_json_file("EVA", "error", "scrubber_error", "false");
+    }
+}
+
+
+/**
+* switches between which ROVER scrubber is increasing linearly and decreasing linearly based on the current DCU command for CO2 scrubber.
+* also switches whether suit_pressure_co2 is increasing or decreasing based on scrubber value and DCU command, to simulate the relationship between CO2 scrubber performance and suit CO2 pressure.
+* If the DCU command for CO2 scrubber is set to true, scrubber_a_co2_storage will be set to linear_growth and scrubber_b_co2_storage will be set to linear_decay.
+* If the DCU command for CO2 scrubber is set to false, scrubber_a_co2_storage will be set to linear_decay and scrubber_b_co2_storage will be set to linear_growth.
+* If the increasing scrubber co2 storage value is above 30, the suit_pressure_co2 field will be set to linear_growth, simulating a buildup of CO2 in the suit due to poor scrubber performance. 
+* If the increasing scrubber co2 storage value is below 30, the suit_pressure_co2 field will be set to linear_decay, simulating effective CO2 scrubbing and a decrease in suit CO2 pressure.
+* @param sim_engine Pointer to the simulation engine to update
+*/
+void update_scrubber_state_ROVER(sim_engine_t* sim_engine) {
+    if (!sim_engine) {
+        return;
+    }
+
+    sim_component_t* rover = sim_engine_get_component(sim_engine, "rover");
+    if (rover == NULL) {
+        printf("Simulation tried to access non-existent component 'rover' for scrubber error state update\n");
+        return;
+    }
+
+    sim_field_t* scrubber_a_field = sim_engine_find_field_within_component(rover, "scrubber_a_co2_storage");
+    sim_field_t* scrubber_b_field = sim_engine_find_field_within_component(rover, "scrubber_b_co2_storage");
+    sim_field_t* suit_co2_pressure_field = sim_engine_find_field_within_component(rover, "suit_pressure_co2");
 
     if (scrubber_a_field == NULL || scrubber_b_field == NULL || suit_co2_pressure_field == NULL) {
         printf("Simulation tried to access non-existent scrubber or suit pressure fields for scrubber error state update\n");
@@ -629,9 +776,8 @@ void update_fan_error_state(sim_engine_t* sim_engine) {
         return;
     }
 
-    bool fan_error_thrown = (field->algorithm == SIM_ALGO_LINEAR_DECAY || field->algorithm == SIM_ALGO_LINEAR_GROWTH);
-    bool fan_rpm_low_error_thrown = (field->algorithm == SIM_ALGO_LINEAR_DECAY);
-    bool fan_rpm_high_error_thrown = (field->algorithm == SIM_ALGO_LINEAR_GROWTH);
+    bool fan_error_thrown = (field->algorithm == SIM_ALGO_LINEAR_DECAY);
+
 
     //update the fan_error state in the JSON file based on the current error state and DCU command
     if (sim_engine->dcu_field_settings->fan == false) { //on backup fan
@@ -643,16 +789,9 @@ void update_fan_error_state(sim_engine_t* sim_engine) {
         }
     } else if (fan_error_thrown && sim_engine->dcu_field_settings->fan == true) {
         update_json_file("EVA", "error", "fan_error", "true");
-        if(fan_rpm_low_error_thrown) {
+        if(fan_error_thrown) {
             if(fan_error_flag == true) {
                 throw_O2_suit_pressure_low_error(sim_engine);
-                o2_error_flag = false; //reset flag so that error is not thrown again until conditions are met again
-            }
-        }
-
-        if(fan_rpm_high_error_thrown) {
-            if(fan_error_flag == true) {
-                throw_O2_suit_pressure_high_error(sim_engine);
                 o2_error_flag = false; //reset flag so that error is not thrown again until conditions are met again
             }
         }
@@ -708,7 +847,7 @@ void update_power_error_state(sim_engine_t* sim_engine) {
 void update_error_states(sim_engine_t* sim_engine) {
 
     update_EVA_error_simulation_error_states(sim_engine);
-    update_scrubber_state(sim_engine);
+    update_scrubber_state_EVA(sim_engine);
 }
 
 /**
@@ -744,7 +883,9 @@ void increment_simulation(struct backend_data_t *backend) {
             update_sim_UIA_field_settings(backend->sim_engine);
             update_sim_active_states(backend->sim_engine);
             update_error_states(backend->sim_engine);
+            update_fan_values(backend->sim_engine);
             update_sim_UIA_connected(backend->sim_engine);
+            cabin_temperature_control(backend->sim_engine);
             sim_engine_update(backend->sim_engine, delta_time);
             update_num_remaining_errors_LTV(backend->sim_engine);
             

@@ -636,7 +636,7 @@ void sim_engine_reset_component(sim_engine_t* engine, const char* component_name
     printf("Reset component '%s' simulation\n", component_name);
 }
 
-
+////////////////////////////////Error 
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                              Field Access
