@@ -139,16 +139,35 @@ void update_fan_values(sim_engine_t* sim_engine) {
     sim_field_t* fan_pri_rpm_field = sim_engine_find_field_within_component(eva1, "fan_pri_rpm");
     sim_field_t* fan_sec_rpm_field = sim_engine_find_field_within_component(eva1, "fan_sec_rpm");
 
-    if (fan_pri_rpm_field && fan_sec_rpm_field) {
-        if (sim_engine->dcu_field_settings->fan) {
-            fan_pri_rpm_field->current_value.f = 30000.0f;
-            fan_sec_rpm_field->current_value.f = 0.0f;
+
+    //if in error state, need to store the last value
+    if(sim_engine->error_type == FAN_RPM_LOW) {
+        if (fan_pri_rpm_field && fan_sec_rpm_field) {
+            if (sim_engine->dcu_field_settings->fan) {
+                fan_pri_rpm_field->current_value.f = 0.0f;
+                fan_sec_rpm_field->current_value.f = 0.0f;
+            } else {
+                fan_pri_rpm_field->current_value.f = 0.0f;
+                fan_sec_rpm_field->current_value.f = 30000.0f;
+            }
         } else {
-            fan_pri_rpm_field->current_value.f = 0.0f;
-            fan_sec_rpm_field->current_value.f = 30000.0f;
+            printf("Simulation tried to access non-existent field 'eva1.fan_pri_rpm' or 'eva1.fan_sec_rpm' for fan value update\n");
         }
-    } else {
-        printf("Simulation tried to access non-existent field 'eva1.fan_pri_rpm' or 'eva1.fan_sec_rpm' for fan value update\n");
+    }
+
+    //otherwise just switch between 0 and 30,000 RPM
+    if(sim_engine->error_type != FAN_RPM_LOW) {
+        if (fan_pri_rpm_field && fan_sec_rpm_field) {
+            if (sim_engine->dcu_field_settings->fan) {
+                fan_pri_rpm_field->current_value.f = 30000.0f;
+                fan_sec_rpm_field->current_value.f = 0.0f;
+            } else {
+                fan_pri_rpm_field->current_value.f = 0.0f;
+                fan_sec_rpm_field->current_value.f = 30000.0f;
+            }
+        } else {
+            printf("Simulation tried to access non-existent field 'eva1.fan_pri_rpm' or 'eva1.fan_sec_rpm' for fan value update\n");
+        }
     }
 }
 
@@ -791,8 +810,8 @@ void update_fan_error_state(sim_engine_t* sim_engine) {
         update_json_file("EVA", "error", "fan_error", "true");
         if(fan_error_thrown) {
             if(fan_error_flag == true) {
-                throw_O2_suit_pressure_low_error(sim_engine);
-                o2_error_flag = false; //reset flag so that error is not thrown again until conditions are met again
+                throw_fan_RPM_low_error(sim_engine);
+                fan_error_flag = false; //reset flag so that error is not thrown again until conditions are met again
             }
         }
 

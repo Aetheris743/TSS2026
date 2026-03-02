@@ -67,7 +67,7 @@
     "suit_pressure_oxy": {
       "type": "float",
       "algorithm": "constant_value",
-      "start_value": 0.0,
+      "start_value": 4.0,
       "min_value": 3.0,
       "max_value": 4.2,
       "rate": 0.1
@@ -104,7 +104,7 @@
       "start_value": 30000.0,
       "min_value": 0.0,
       "max_value": 30500.0,
-      "rate": 10.0
+      "rate": 13574.0
     },
     "fan_sec_rpm": {
       "type": "float",

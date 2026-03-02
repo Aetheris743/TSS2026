@@ -7,13 +7,13 @@
 			"oxy_sec_storage":	100,
 			"oxy_pri_pressure":	0,
 			"oxy_sec_pressure":	0,
-			"suit_pressure_oxy":	0,
+			"suit_pressure_oxy":	4,
 			"suit_pressure_co2":	0,
 			"suit_pressure_other":	0,
 			"suit_pressure_total":	0,
 			"helmet_pressure_co2":	0,
-			"fan_pri_rpm":	0,
-			"fan_sec_rpm":	30000,
+			"fan_pri_rpm":	30000,
+			"fan_sec_rpm":	0,
 			"scrubber_a_co2_storage":	0,
 			"scrubber_b_co2_storage":	0,
 			"temperature":	0,
@@ -56,7 +56,7 @@
 	"dcu":	{
 		"eva1":	{
 			"oxy":	true,
-			"fan":	false,
+			"fan":	true,
 			"pump":	true,
 			"co2":	true,
 			"batt":	{

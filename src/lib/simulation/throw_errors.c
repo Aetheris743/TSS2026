@@ -133,7 +133,6 @@ bool throw_fan_RPM_low_error(sim_engine_t* engine) {
     sim_field_t* field = sim_engine_find_field_within_component(eva1, "fan_pri_rpm");
     if (field) {
         field->algorithm = SIM_ALGO_LINEAR_DECAY;
-        field->rate.f = 10.0f; //set a high decay rate to simulate a rapid RPM decrease
     } else {
         printf("Simulation tried to access non-existent field 'fan_pri_rpm' for fan RPM low error\n");
         return false;

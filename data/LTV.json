@@ -9,12 +9,12 @@
 		"ping_requested":	0
 	},
 	"errors":	{
-		"recovery_mode":	true,
-		"dust_sensor":	true,
-		"power_distribution":	true,
-		"nav_system":	true,
-		"electronic_heater":	true,
-		"comms":	true,
-		"fuse":	true
+		"recovery_mode":	false,
+		"dust_sensor":	false,
+		"power_distribution":	false,
+		"nav_system":	false,
+		"electronic_heater":	false,
+		"comms":	false,
+		"fuse":	false
 	}
 }
