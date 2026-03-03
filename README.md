@@ -199,7 +199,6 @@ In addition, the below commands can be used to turn on the headlights and trigge
 | -------------- | -------- | -------------------------- |
 | 1103           | Cabin Heating | float: 0.0 or 1.0              |
 | 1104           | Cabin Cooling | float: 0.0 or 1.0              |
-| 1105           | CO2 Scrubber | float: 0.0 or 1.0             |
 | 1106           | Headlights | float: 0.0 or 1.0           |
 
 Here is an example UDP packet to increase the rover to half throttle (50.0).
