@@ -7,6 +7,7 @@
 #define OXY_VENT_RATE 4.3f
 #define OXY_FILL_RATE 2.5f
 #define OXY_RATE 0.01f
+#define OXY_ERROR_RATE 0.1f
 #define CO2_RATE 0.01f
 #define COOLANT_FILL_RATE 5.76f
 #define COOLANT_DRAIN_RATE 6.78f

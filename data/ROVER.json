@@ -1,7 +1,7 @@
 {
 	"pr_telemetry":	{
 		"cabin_heating":	false,
-		"cabin_cooling":	false,
+		"cabin_cooling":	true,
 		"co2_scrubber":	true,
 		"lights_on":	true,
 		"brakes":	false,

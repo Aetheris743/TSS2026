@@ -70,7 +70,7 @@ bool throw_O2_suit_pressure_low_error(sim_engine_t* engine) {
     if (field) {
         if(engine->dcu_field_settings->o2 == true) {
             field->algorithm = SIM_ALGO_LINEAR_DECAY;
-            field->rate.f = 0.1f; //set a high decay rate to simulate a rapid pressure drop
+            field->rate.f = OXY_ERROR_RATE; //set a high decay rate to simulate a rapid pressure drop
         }
     } else {
         printf("Simulation tried to access non-existent field 'suit_pressure_oxy' for O2 storage error\n");
@@ -101,7 +101,7 @@ bool throw_O2_suit_pressure_high_error(sim_engine_t* engine) {
     if (field) {
         if(engine->dcu_field_settings->o2 == true) {
             field->algorithm = SIM_ALGO_LINEAR_GROWTH;
-            field->rate.f = 0.1f; //set a high growth rate to simulate a rapid pressure increase
+            field->rate.f = OXY_ERROR_RATE; //set a high growth rate to simulate a rapid pressure increase
         }
     } else {
         printf("Simulation tried to access non-existent field 'suit_pressure_oxy' for O2 storage error\n");
