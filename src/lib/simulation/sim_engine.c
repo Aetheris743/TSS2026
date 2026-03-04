@@ -399,7 +399,7 @@ bool sim_engine_initialize(sim_engine_t* engine) {
 
         engine->error_time = time_to_throw_error();
         engine->num_task_board_errors = INITIAL_NUM_TASK_BOARD_ERRORS; //initialize number of task board errors to 0 at the start of each simulation run
-        engine->time_to_complete_task_board = 0;
+        engine->time_to_complete_task_board = -10; //unreachable value
         engine->error_type = NUM_ERRORS; // set to NUM_ERRORS to signify no error, will be set to 0,1,2..NUM_ERRORS-1 to signify different errors when it's time to throw an error
     
     

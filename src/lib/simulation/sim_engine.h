@@ -15,7 +15,7 @@
 #define SIM_DATA_ROOT "data"
 #define SIM_CONFIG_ROOT "src/lib/simulation/config"
 
-#define INITIAL_NUM_TASK_BOARD_ERRORS 10
+#define INITIAL_NUM_TASK_BOARD_ERRORS 4
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Data Types

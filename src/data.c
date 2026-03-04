@@ -584,6 +584,18 @@ void update_num_remaining_errors_LTV(sim_engine_t* engine) {
             remaining_errors++;
         }
     }
+
+    sim_component_t* eva1 = sim_engine_get_component(engine, "eva1");
+     if (eva1 == NULL) {
+        printf("Simulation tried to access non-existent component 'eva1' for updating remaining errors\n");
+        cJSON_Delete(ltv_errors_json);
+        return;
+    }
+    if(remaining_errors == 0 && engine->time_to_complete_task_board == -10 && eva1->running == true) { //if all errors have been resolved, set time to complete task board to current simulation time to track how long it took to resolve all errors, but only if the task board is currently running and time to complete task board has not already been set
+        engine->time_to_complete_task_board = eva1->simulation_time; //set error time to current time when all errors have been resolved to track how long it took to resolve all errors
+    }
+
+    engine->num_task_board_errors = remaining_errors;
     cJSON_Delete(ltv_errors_json);
 }
 
