@@ -542,45 +542,51 @@ void update_EVA_error_simulation_error_states(sim_engine_t* sim_engine) {
 
 /**
 * Update the number of LTV errors still thrown
+* based on the LTV_ERRORS number of "needs_resolved" values still true in the JSON file. 
+* If there are no more "needs_resolved" values that are true, 
+* the number of remaining LTV errors will be set to 0.
 * @param engine Pointer to the simulation engine
 */
 
 void update_num_remaining_errors_LTV(sim_engine_t* engine) {
-    if (!engine) {
-        printf("Error: Invalid simulation engine pointer in update_num_remaining_errors_LTV\n");
-        return;
-    }
+    //check how many LTV errors still need to be resolved by checking the LTV_ERRORS JSON file for any "needs_resolved" values that are still true for LTV errors
+    int remaining_errors = 0;
 
     //count the number of values in the LTV json file under "errors" that are set to true to indicate that those errors are still being thrown, and update the number of task board errors accordingly
-    cJSON* ltv_config = get_json_file("LTV");
-    if (!ltv_config) {
-        printf("Error: Failed to load LTV config file in update_num_remaining_errors_LTV\n");
+    cJSON* ltv_errors_json = get_json_file("LTV_ERRORS");
+    if (!ltv_errors_json) {
+        printf("Error: Failed to load LTV_ERRORS config file in update_num_remaining_errors_LTV\n");
         return;
     }
 
-    cJSON* errors = cJSON_GetObjectItem(ltv_config, "errors");
-    if (!errors || !cJSON_IsObject(errors)) {
-        printf("Error: Missing or invalid 'errors' object in LTV config file\n");
-        cJSON_Delete(ltv_config);
+    cJSON* error_array = cJSON_GetObjectItem(ltv_errors_json, "error_procedures");
+    if (error_array == NULL) {
+        printf("Failed to get 'errors' array from LTV_ERRORS JSON file for updating remaining errors\n");
+        cJSON_Delete(ltv_errors_json);
         return;
     }
 
-    int remaining_errors = 0;
-    cJSON* error = NULL;
-    cJSON_ArrayForEach(error, errors) {
-        if (cJSON_IsBool(error) && cJSON_IsTrue(error)) {
+    int error_count = cJSON_GetArraySize(error_array);
+    for (int i = 0; i < error_count; i++) {
+        cJSON* error_item = cJSON_GetArrayItem(error_array, i);
+        if (error_item == NULL) {
+            printf("Failed to get error item from LTV_ERRORS JSON file for updating remaining errors\n");
+            continue;
+        }
+
+        cJSON* needs_resolved = cJSON_GetObjectItem(error_item, "needs_resolved");
+        if (needs_resolved == NULL) {
+            printf("Failed to get 'needs_resolved' from error item in LTV_ERRORS JSON file for updating remaining errors\n");
+            continue;
+        }
+
+        if (cJSON_IsTrue(needs_resolved)) {
             remaining_errors++;
         }
     }
 
-    engine->num_task_board_errors = remaining_errors;
-    
-    //update task board time clock if errors remain
-    if(remaining_errors !=0) {
-        engine->time_to_complete_task_board += 1; //increment time to complete task board by 1 second, simulating the increased time to complete the task board with more errors
-    }
-    cJSON_Delete(ltv_config);
-
+    printf("Number of remaining LTV errors that need to be resolved: %d\n", remaining_errors);
+    cJSON_Delete(ltv_errors_json);
 }
 
 /**
@@ -960,6 +966,10 @@ void handle_udp_get_request(unsigned int command, unsigned char* data, struct ba
             printf("Getting LTV telemetry data.\n");
             send_json_file("LTV", data);
             break;
+        case 3: //LTV_ERRORS data
+            printf("Getting LTV error data.\n");
+            send_json_file("LTV_ERRORS", data);
+            break;
 
 
         default:
@@ -1038,14 +1048,12 @@ bool handle_udp_post_request(unsigned int command, unsigned char* data, struct b
  * @param new_value New value to set for the specified field
  */
 void update_json_file(const char* filename, const char* section, const char* field_path, char* new_value) {
-    // Construct the file path
     char file_path[100];
     snprintf(file_path, sizeof(file_path), "data/%s.json", filename);
 
-    // Read existing JSON file
     FILE *fp = fopen(file_path, "r");
-    if (fp == NULL) {
-        printf("Error: Unable to open the file %s for reading.\n", file_path);
+    if (!fp) {
+        printf("Error: Unable to open %s for reading.\n", file_path);
         return;
     }
 
@@ -1055,111 +1063,124 @@ void update_json_file(const char* filename, const char* section, const char* fie
 
     char *file_buffer = malloc(file_size + 1);
     fread(file_buffer, 1, file_size, fp);
-    file_buffer[file_size] = '\0'; // Null-terminate the buffer
+    file_buffer[file_size] = '\0';
     fclose(fp);
 
-    // Parse the JSON content
     cJSON *json = cJSON_Parse(file_buffer);
     free(file_buffer);
 
-    if (json == NULL) {
-        printf("Error: Failed to parse JSON from file %s., check data folder for existing files. Accidental edits to those files can be resolved with git checkout data\n", file_path);
+    if (!json) {
+        printf("Error: Failed to parse JSON from %s\n", file_path);
         return;
     }
 
-    // Navigate to the specified section
     cJSON *section_json = cJSON_GetObjectItemCaseSensitive(json, section);
-    if (section_json == NULL) {
+    if (!section_json) {
         printf("Error: Section %s not found in JSON.\n", section);
         cJSON_Delete(json);
         return;
     }
 
-    // Parse the field path and navigate through it (supports both simple and nested paths)
-    char field_path_copy[256];
-    strncpy(field_path_copy, field_path, sizeof(field_path_copy) - 1);
-    field_path_copy[sizeof(field_path_copy) - 1] = '\0';
-    
-    cJSON *current_object = section_json;
-    char* field_parts[10];
-    int field_part_count = 0;
-    
-    // Split field path by dots
-    char* token = strtok(field_path_copy, ".");
-    while (token != NULL && field_part_count < 10) {
-        field_parts[field_part_count++] = token;
+    char path_copy[256];
+    strncpy(path_copy, field_path, sizeof(path_copy)-1);
+    path_copy[sizeof(path_copy)-1] = '\0';
+
+    char* token;
+    char* field_parts[20];
+    int field_count = 0;
+
+    token = strtok(path_copy, ".");
+    while (token && field_count < 20) {
+        field_parts[field_count++] = token;
         token = strtok(NULL, ".");
     }
-    
-    // Navigate through all but the last field part
-    for (int i = 0; i < field_part_count - 1; i++) {
-        cJSON *next_object = cJSON_GetObjectItemCaseSensitive(current_object, field_parts[i]);
-        if (next_object == NULL) {
-            printf("Error: Field path %s not found at level %s.\n", field_path, field_parts[i]);
+
+    cJSON* current = section_json;
+
+    for (int i = 0; i < field_count - 1; i++) {
+        char* part = field_parts[i];
+
+        // Check if this part is an array index
+        char* endptr;
+        long idx = strtol(part, &endptr, 10);
+
+        if (*endptr == '\0') {
+            // It's a number → array index
+            if (!cJSON_IsArray(current)) {
+                printf("Error: Expected array at %s but found object.\n", part);
+                cJSON_Delete(json);
+                return;
+            }
+            current = cJSON_GetArrayItem(current, idx);
+            if (!current) {
+                printf("Error: Array index %ld out of bounds.\n", idx);
+                cJSON_Delete(json);
+                return;
+            }
+        } else {
+            // It's a string → object key
+            current = cJSON_GetObjectItemCaseSensitive(current, part);
+            if (!current) {
+                printf("Error: Field path not found at %s.\n", part);
+                cJSON_Delete(json);
+                return;
+            }
+        }
+    }
+
+    // Handle final part (can also be array index or object key)
+    char* final_part = field_parts[field_count - 1];
+    cJSON* new_value_json = NULL;
+
+    if (strcmp(new_value, "true") == 0) {
+        new_value_json = cJSON_CreateTrue();
+    } else if (strcmp(new_value, "false") == 0) {
+        new_value_json = cJSON_CreateFalse();
+    } else if (new_value[0] == '[') {
+        // Parse as array of numbers
+        cJSON* arr = cJSON_CreateArray();
+        char* copy = strdup(new_value);
+        char* item = strtok(copy + 1, ",]");
+        while (item) {
+            double n = strtod(item, NULL);
+            cJSON_AddItemToArray(arr, cJSON_CreateNumber(n));
+            item = strtok(NULL, ",]");
+        }
+        free(copy);
+        new_value_json = arr;
+    } else {
+        char* endptr;
+        double num = strtod(new_value, &endptr);
+        if (*endptr == '\0') new_value_json = cJSON_CreateNumber(num);
+        else new_value_json = cJSON_CreateString(new_value);
+    }
+
+    // Check if final part is array index
+    char* endptr;
+    long idx = strtol(final_part, &endptr, 10);
+
+    if (*endptr == '\0') {
+        if (!cJSON_IsArray(current)) {
+            printf("Error: Expected array for final part but found object.\n");
             cJSON_Delete(json);
             return;
         }
-        current_object = next_object;
-    }
-    
-    // Update the final field
-    const char* final_field = field_parts[field_part_count - 1];
-    
-    // Determine value type and create appropriate JSON value
-    cJSON* new_json_value = NULL;
-    if (strcmp(new_value, "true") == 0) {
-        new_json_value = cJSON_CreateTrue();
-    } else if (strcmp(new_value, "false") == 0) {
-        new_json_value = cJSON_CreateFalse();
-    } else if (new_value[0] == '[') { // check if starts with bracket `[` for array (LiDAR)
-        // Parse as array of floats
-        cJSON* array = cJSON_CreateArray();
-        char* value_copy = strdup(new_value);
-        char* item = strtok(value_copy + 1, ",]");
-        
-        while (item != NULL) {
-            double num = strtod(item, NULL);
-            cJSON_AddItemToArray(array, cJSON_CreateNumber(num));
-            item = strtok(NULL, ",]");
-        }
-
-        free(value_copy);
-        new_json_value = array;
+        cJSON_ReplaceItemInArray(current, idx, new_value_json);
     } else {
-        // Try to parse as number
-        char* endptr;
-        double num_value = strtod(new_value, &endptr);
-        if (*endptr == '\0') {
-            // It's a valid number
-            new_json_value = cJSON_CreateNumber(num_value);
-        } else {
-            // Treat as string
-            new_json_value = cJSON_CreateString(new_value);
-        }
-    }
-    
-    cJSON_ReplaceItemInObject(current_object, final_field, new_json_value);
-
-    // Write updated JSON back to file
-    char *json_str = cJSON_Print(json);
-    if (json_str == NULL) {
-        printf("Error: Failed to print JSON to string.\n");
-        cJSON_Delete(json);
-        return;
+        cJSON_ReplaceItemInObject(current, final_part, new_value_json);
     }
 
+    char* out = cJSON_Print(json);
     fp = fopen(file_path, "w");
-    if (fp == NULL) {
-        printf("Error: Unable to open the file %s for writing.\n", file_path);
-        free(json_str);
+    if (!fp) {
+        printf("Error: Unable to write to %s\n", file_path);
+        free(out);
         cJSON_Delete(json);
         return;
     }
-
-    fputs(json_str, fp);
+    fputs(out, fp);
     fclose(fp);
-
-    free(json_str);
+    free(out);
     cJSON_Delete(json);
 }
 
@@ -1459,8 +1480,11 @@ bool html_form_json_update(char* request_content, struct backend_data_t* backend
         filename = "ROVER";
     } else if (strcmp(route_parts[0], "ltv") == 0) {
         filename = "LTV";
-    } else {
-        printf("Error: Unsupported file type '%s'. Use 'eva', 'rover', or 'ltv'\n", route_parts[0]);
+    } else if (strcmp(route_parts[0], "ltv_errors") == 0) {
+        filename = "LTV_ERRORS";
+    } 
+    else {
+        printf("Error: Unsupported file type '%s'. Use 'eva', 'rover', 'ltv_errors', or 'ltv'\n", route_parts[0]);
         return false;
     }
     
