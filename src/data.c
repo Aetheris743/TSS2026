@@ -584,8 +584,6 @@ void update_num_remaining_errors_LTV(sim_engine_t* engine) {
             remaining_errors++;
         }
     }
-
-    printf("Number of remaining LTV errors that need to be resolved: %d\n", remaining_errors);
     cJSON_Delete(ltv_errors_json);
 }
 
@@ -938,6 +936,56 @@ void cleanup_backend(struct backend_data_t *backend) {
     free(backend);
 }
 
+/** 
+* checks if recovery mode is resolved by checking the LTV_ERRORS JSON file for needs_resolved value under Recovery Mode
+* If the recovery mode is resolved, the function will return true, allowing the LTV_ERRORS data to be sent in response to UDP GET requests.
+* If the recovery mode is not resolved, the function will return false, preventing the LTV_ERRORS data from being sent in response to UDP GET requests
+*/
+bool is_recovery_mode_resolved() {
+    cJSON* ltv_errors_json = get_json_file("LTV_ERRORS");
+    if (!ltv_errors_json) {
+        printf("Error: Failed to load LTV_ERRORS config file in is_recovery_mode_resolved\n");
+        return false;
+    }
+
+    cJSON* error_array = cJSON_GetObjectItem(ltv_errors_json, "error_procedures");
+    if (!cJSON_IsArray(error_array)) {
+        printf("Failed to get 'error_procedures' array from LTV_ERRORS JSON\n");
+        cJSON_Delete(ltv_errors_json);
+        return false;
+    }
+
+    int count = cJSON_GetArraySize(error_array);
+
+    for (int i = 0; i < count; i++) {
+        cJSON* error_item = cJSON_GetArrayItem(error_array, i);
+        if (!cJSON_IsObject(error_item)) {
+            continue;
+        }
+
+        cJSON* description = cJSON_GetObjectItem(error_item, "description");
+        if (cJSON_IsString(description) &&
+            strcmp(description->valuestring, "Recovery Mode") == 0) {
+
+            cJSON* needs_resolved =
+                cJSON_GetObjectItem(error_item, "needs_resolved");
+
+            if (cJSON_IsBool(needs_resolved)) {
+                bool resolved = !cJSON_IsTrue(needs_resolved);
+                cJSON_Delete(ltv_errors_json);
+                return resolved;
+            }
+
+            printf("'needs_resolved' missing or invalid for Recovery Mode\n");
+            break;
+        }
+    }
+
+    printf("Recovery Mode entry not found in LTV_ERRORS\n");
+    cJSON_Delete(ltv_errors_json);
+    return false;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                             UDP Request Handlers
@@ -967,8 +1015,13 @@ void handle_udp_get_request(unsigned int command, unsigned char* data, struct ba
             send_json_file("LTV", data);
             break;
         case 3: //LTV_ERRORS data
+            //only print this data if the Recovery Mode is resolved
+            if(is_recovery_mode_resolved()) {
             printf("Getting LTV error data.\n");
             send_json_file("LTV_ERRORS", data);
+            } else {
+                printf("Recovery Mode not resolved, not sending LTV error data.\n");
+            }
             break;
 
 
