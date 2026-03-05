@@ -95,6 +95,10 @@ async function fetchData() {
       value = getNestedValue(roverData, path.slice(6));
     }
 
+    if (path.startsWith("ltv.")) {
+      value = getNestedValue(ltvData, path.slice(4));
+    }
+
     if (path.startsWith("ltv_errors.")) {
       value = getNestedValue(ltvErrorsData, path.slice(11));
     }
@@ -178,6 +182,7 @@ async function updateServerData(path, value) {
 // EVENT LISTENERS
 
 function setupEventListeners() {
+  
   // When any of the switch values are toggled, send the new value to the server
   const switches = document.querySelectorAll(
     'input[type="checkbox"][data-path]'
@@ -198,6 +203,24 @@ function setupEventListeners() {
     button.addEventListener("click", (event) => {
       const path = event.target.getAttribute("data-path");
       const action = event.target.getAttribute("data-action");
+
+
+    // Only apply 5-second cooldown to limited ping button
+    if (event.target.classList.contains("btn-ping")) {
+      const now = Date.now();
+      if (!window.lastPingTime) window.lastPingTime = 0;
+
+      if (now - window.lastPingTime < 20000) {
+        console.log("Ping ignored: 20-second cooldown");
+        event.preventDefault();
+        return; // stop here if still in cooldown
+      }
+
+      window.lastPingTime = now;
+      event.target.disabled = true;
+      setTimeout(() => { event.target.disabled = false; }, 5000);
+    }
+
 
       // For action buttons, directly update the status field
       if (action === "start") {
