@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
                 handle_udp_get_request(command, (unsigned char *)json_data, backend);
 
                 size_t json_len = strlen(json_data);
-                buffer_size = 8 + json_len + 1;  // header + JSON + null terminator
+                buffer_size = json_len;
                 response_buffer = malloc(buffer_size);
                 if (!response_buffer) {
                     fprintf(stderr, "Failed to allocate memory for GET response\n");
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 // Prepare response packet with JSON data content
-                memcpy(response_buffer + 8, json_data, json_len + 1);
+                memcpy(response_buffer, json_data, json_len);
 
                 // Send response
                 int bytes_sent =

@@ -96,17 +96,6 @@
                                 <div class="card-content">
                                     <div class="sensor-container">
                                         <label class="switch">
-                                            <input type="checkbox" data-path="rover.pr_telemetry.co2_scrubber">
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            CO2 Scrubber
-                                        </span>
-                                    </div>
-                                    <div class="sensor-container">
-                                        <label class="switch">
                                             <input type="checkbox" data-path="rover.pr_telemetry.lights_on">
                                             <span class="slider round"></span>
                                         </label>
@@ -233,11 +222,11 @@
                                 <div class="card-content">
                                     <div class="data-label">
                                         <span class="value">
-                                            Oxygen Tank
+                                            Oxygen Storage
                                         </span>
                                     </div>
                                     <div class="data-value">
-                                        <span class="value" data-path="rover.pr_telemetry.oxygen_tank" data-units="%">
+                                        <span class="value" data-path="rover.pr_telemetry.oxygen_storage" data-units="%">
                                             ------
                                         </span>
                                     </div>
@@ -248,30 +237,6 @@
                                     </div>
                                     <div class="data-value">
                                         <span class="value" data-path="rover.pr_telemetry.oxygen_pressure" data-units="psi">
-                                            ------
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="data-label">
-                                        <span class="value">
-                                            Primary Fan
-                                        </span>
-                                    </div>
-                                    <div class="data-value">
-                                        <span class="value" data-path="rover.pr_telemetry.fan_pri_rpm" data-units="rpm">
-                                            ------
-                                        </span>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            Secondary Fan
-                                        </span>
-                                    </div>
-                                    <div class="data-value">
-                                        <span class="value" data-path="rover.pr_telemetry.fan_sec_rpm" data-units="rpm">
                                             ------
                                         </span>
                                     </div>
@@ -339,13 +304,33 @@
                                     </div>
                                     <div class="data-label">
                                         <span class="value">
-                                            Battery Level
+                                            Primary Battery Level
                                         </span>
                                     </div>
                                     <div class="data-value">
-                                        <span class="value" data-path="rover.pr_telemetry.battery_level" data-units="%">
+                                        <span class="value" data-path="rover.pr_telemetry.primary_battery_level" data-units="%">
                                             ------
                                         </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-content">
+                                    <div class="data-label">
+                                        <span class="value">
+                                            Secondary Battery Level
+                                        </span>
+                                    </div>
+                                    <div class="data-value">
+                                        <span class="value" data-path="rover.pr_telemetry.secondary_battery_level" data-units="%">
+                                            ------
+                                        </span>
+                                    </div>
+                                    <div class="data-label">
+                                        <span class="value">
+                                        </span>
+                                    </div>
+                                    <div class="data-value">
                                     </div>
                                 </div>
                             </div>
@@ -407,11 +392,11 @@
                         </div>
 
 
-                        <!------------------------------------------ LTV Panel ------------------------------------------>
-                        <div class="card">
+                        <!------------------------------------------ LTV Section ------------------------------------------>
+                        <div class="card" style="border-bottom: 3px solid var(--sharp-blue);">
                             <div class="card-header">
                                 <span class="card-title">
-                                    LTV CONTROL
+                                    LTV
                                 </span>
                             </div>
                             <div class="card-body">
@@ -422,114 +407,13 @@
 </svg>
                                     PING
                                 </button>
-                            </div>
-                            <div class="card-subtitle">
-                                <span class="subtitle">
-                                    LTV ERRORS
-                                </span>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="sensor-container">
-                                        <label class="switch">
-                                            <input type="checkbox" data-path="ltv.errors.recovery_mode">
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            Recovery Mode
-                                        </span>
-                                    </div>
-                                    <div class="sensor-container">
-                                        <label class="switch">
-                                            <input type="checkbox" data-path="ltv.errors.dust_sensor">
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            Dust Sensor Error
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="sensor-container">
-                                        <label class="switch">
-                                            <input type="checkbox" data-path="ltv.errors.power_distribution">
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            Power Distribution Error
-                                        </span>
-                                    </div>
-                                    <div class="sensor-container">
-                                        <label class="switch">
-                                            <input type="checkbox" data-path="ltv.errors.nav_system">
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            NAV System Error
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="sensor-container">
-                                        <label class="switch">
-                                            <input type="checkbox" data-path="ltv.errors.electronic_heater">
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            Electronic Heater Error
-                                        </span>
-                                    </div>
-                                    <div class="sensor-container">
-                                        <label class="switch">
-                                            <input type="checkbox" data-path="ltv.errors.comms">
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            Comms Error
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="sensor-container">
-                                        <label class="switch">
-                                            <input type="checkbox" data-path="ltv.errors.fuse">
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </div>
-                                    <div class="data-label">
-                                        <span class="value">
-                                            Fuse Error
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-                        <!------------------------------------------ LTV Section ------------------------------------------>
-                        <div class="card" style="border-bottom: 3px solid var(--sharp-blue);">
-                            <div class="card-header">
-                                <span class="card-title">
-                                    LTV
-                                </span>
+                                <button data-path="ltv.signal.ping_requested" data-action="start" class="btn-ping-unlimited">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M6.62132 1.06066L6.09099 1.59099L5.59556 2.08642L12.9931 5.5676L13.5304 5.03033L14.0607 4.5L15.1214 5.56066L14.591 6.09099L10.8714 9.81066L15.091 14.0304L15.6214 14.5607L14.5607 15.6214L14.0304 15.091L9.81066 10.8714L6.09099 14.591L5.56066 15.1214L4.5 14.0607L5.03033 13.5304L5.5676 12.9931L2.08642 5.59556L1.59099 6.09099L1.06066 6.62132L0 5.56066L0.53033 5.03033L1.76804 3.79262C1.77604 3.78424 1.78425 3.77602 1.79267 3.76799L3.76799 1.79267C3.77602 1.78425 3.78424 1.77604 3.79262 1.76804L5.03033 0.53033L5.56066 0L6.62132 1.06066ZM4.46826 3.21372L3.21372 4.46826L6.6949 11.8658L8.75 9.81066L9.81066 8.75L11.8658 6.6949L4.46826 3.21372Z" fill="white"/>
+<path d="M4.46826 3.21372L3.21372 4.46826L6.6949 11.8658L8.75 9.81066L9.81066 8.75L11.8658 6.6949L4.46826 3.21372Z" fill="white"/>
+</svg>
+                                    PING (unlimited)
+                                </button>
                             </div>
                             <div class="card-subtitle">
                                 <span class="subtitle">
@@ -687,7 +571,7 @@
                                     </div>
                                     <div class="info-container">
                                         <span class="info-text">
-                                            EV1 Oxygen
+                                            EMU1 Oxygen
                                         </span>
                                     </div>
                                     <div class="sensor-container">
@@ -698,7 +582,7 @@
                                     </div>
                                     <div class="info-container">
                                         <span class="info-text">
-                                            EV2 Oxygen
+                                            EMU2 Oxygen
                                         </span>
                                     </div>
                                 </div>
@@ -730,6 +614,107 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!--------------------------------DCU State Section-------------------------------------------------->
+                            <div class="card">
+                                <div class="card-header">
+                                    <span class="card-title">
+                                        DCU
+                                    </span>
+                                </div>
+                            <div class="card-body">
+                                <div class="card-content">
+                                    <div class="dcu-control-row">
+                                        <div class="dcu_switch-container">
+                                            <span class="dcu-label-left">LOCAL</span>
+                                            <label class="switch">
+                                                <input type="checkbox" data-path="eva.dcu.eva1.batt.lu">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="dcu-label-right">UMB</span>
+                                        </div>
+                                        <div class="dcu-control-label">
+                                            <span class="info-text">BATTERY</span>
+                                        </div>
+                                    </div>
+                                    <div class="dcu-control-row">
+                                        <div class="dcu-switch-container">
+                                            <span class="dcu-label-left">SEC</span>
+                                            <label class="switch">
+                                                <input type="checkbox" data-path="eva.dcu.eva1.fan">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="dcu-label-right">PRI</span>
+                                        </div>
+                                        <div class="dcu-control-label">
+                                            <span class="info-text">FAN</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-content">
+                                    <div class="dcu-control-row">
+                                        <div class="dcu-switch-container">
+                                            <span class="dcu-label-left">SEC</span>
+                                            <label class="switch">
+                                                <input type="checkbox" data-path="eva.dcu.eva1.oxy">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="dcu-label-right">PRI</span>
+                                        </div>
+                                        <div class="dcu-control-label">
+                                            <span class="info-text">OXYGEN</span>
+                                        </div>
+                                    </div>
+                                    <div class="dcu-control-row">
+                                        <div class="dcu-switch-container">
+                                            <span class="dcu-label-left">CLOSE</span>
+                                            <label class="switch">
+                                                <input type="checkbox" data-path="eva.dcu.eva1.pump">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="dcu-label-right">OPEN</span>
+                                        </div>
+                                        <div class="dcu-control-label">
+                                            <span class="info-text">PUMP</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-content">
+                                    <div class="dcu-control-row">
+                                        <div class="dcu-switch-container">
+                                            <span class="dcu-label-left">SEC</span>
+                                            <label class="switch">
+                                                <input type="checkbox" data-path="eva.dcu.eva1.batt.ps">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="dcu-label-right">PRI</span>
+                                        </div>
+                                        <div class="dcu-control-label">
+                                            <span class="info-text">BATTERY</span>
+                                        </div>
+                                    </div>
+                                    <div class="dcu-control-row">
+                                        <div class="dcu-switch-container">
+                                            <span class="dcu-label-left">SEC</span>
+                                            <label class="switch">
+                                                <input type="checkbox" data-path="eva.dcu.eva1.co2">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="dcu-label-right">PRI</span>
+                                        </div>
+                                        <div class="dcu-control-label">
+                                            <span class="info-text">CO2</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-----------------------EVA Control---------------------------------------------------->
 
                         <div class="card">
                             <div class="card-header">
@@ -803,6 +788,72 @@
                                     <div class="data-label">
                                         <span class="value">
                                             Power Error
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!--------------------------------LTV ERRORS Section------------------------------------------------->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">
+                                    LTV ERRORS
+                                </span>
+                            </div>
+                            <div class="card-subtitle">
+                                <span class="subtitle">
+                                    LTV ERRORS
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-content">
+                                    <div class="sensor-container">
+                                        <label class="switch">
+                                            <input type="checkbox" data-path="ltv_errors.error_procedures.0.needs_resolved">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </div>
+                                    <div class="data-label">
+                                        <span class="value">
+                                            Recovery Mode
+                                        </span>
+                                    </div>
+                                    <div class="sensor-container">
+                                        <label class="switch">
+                                            <input type="checkbox" data-path="ltv_errors.error_procedures.1.needs_resolved">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </div>
+                                    <div class="data-label">
+                                        <span class="value">
+                                            Main Power Bus Error
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-content">
+                                    <div class="sensor-container">
+                                        <label class="switch">
+                                            <input type="checkbox" data-path="ltv_errors.error_procedures.2.needs_resolved">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </div>
+                                    <div class="data-label">
+                                        <span class="value">
+                                            Dust Sensor Error
+                                        </span>
+                                    </div>
+                                    <div class="sensor-container">
+                                        <label class="switch">
+                                            <input type="checkbox" data-path="ltv_errors.error_procedures.3.needs_resolved">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </div>
+                                    <div class="data-label">
+                                        <span class="value">
+                                            Backup Fuse Error
                                         </span>
                                     </div>
                                 </div>
@@ -1148,106 +1199,6 @@
                                     </div>
                                 </div>
                             </div>
-
-
-                            <!------------------------------------------ DCU State Section ------------------------------------------>
-                            <div class="card-subtitle">
-                                <span class="subtitle">
-                                    DCU STATE
-                                </span>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="dcu-control-row">
-                                        <div class="dcu-switch-container">
-                                            <span class="dcu-label-left">LOCAL</span>
-                                            <label class="switch">
-                                                <input type="checkbox" data-path="eva.dcu.eva1.batt.lu">
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <span class="dcu-label-right">UMB</span>
-                                        </div>
-                                        <div class="dcu-control-label">
-                                            <span class="info-text">BATTERY</span>
-                                        </div>
-                                    </div>
-                                    <div class="dcu-control-row">
-                                        <div class="dcu-switch-container">
-                                            <span class="dcu-label-left">SEC</span>
-                                            <label class="switch">
-                                                <input type="checkbox" data-path="eva.dcu.eva1.fan">
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <span class="dcu-label-right">PRI</span>
-                                        </div>
-                                        <div class="dcu-control-label">
-                                            <span class="info-text">FAN</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="dcu-control-row">
-                                        <div class="dcu-switch-container">
-                                            <span class="dcu-label-left">SEC</span>
-                                            <label class="switch">
-                                                <input type="checkbox" data-path="eva.dcu.eva1.oxy">
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <span class="dcu-label-right">PRI</span>
-                                        </div>
-                                        <div class="dcu-control-label">
-                                            <span class="info-text">OXYGEN</span>
-                                        </div>
-                                    </div>
-                                    <div class="dcu-control-row">
-                                        <div class="dcu-switch-container">
-                                            <span class="dcu-label-left">CLOSE</span>
-                                            <label class="switch">
-                                                <input type="checkbox" data-path="eva.dcu.eva1.pump">
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <span class="dcu-label-right">OPEN</span>
-                                        </div>
-                                        <div class="dcu-control-label">
-                                            <span class="info-text">PUMP</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="dcu-control-row">
-                                        <div class="dcu-switch-container">
-                                            <span class="dcu-label-left">SEC</span>
-                                            <label class="switch">
-                                                <input type="checkbox" data-path="eva.dcu.eva1.batt.ps">
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <span class="dcu-label-right">PRI</span>
-                                        </div>
-                                        <div class="dcu-control-label">
-                                            <span class="info-text">BATTERY</span>
-                                        </div>
-                                    </div>
-                                    <div class="dcu-control-row">
-                                        <div class="dcu-switch-container">
-                                            <span class="dcu-label-left">SEC</span>
-                                            <label class="switch">
-                                                <input type="checkbox" data-path="eva.dcu.eva1.co2">
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <span class="dcu-label-right">PRI</span>
-                                        </div>
-                                        <div class="dcu-control-label">
-                                            <span class="info-text">CO2</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
 
                         <!------------------------------------------ EVA 2 Section ------------------------------------------>
                         <div class="card"  style="border-bottom: 2px solid var(--sharp-blue);">

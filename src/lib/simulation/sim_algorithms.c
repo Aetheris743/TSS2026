@@ -9,246 +9,129 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Sine wave algorithm for oscillating values.
+ * Sine wave algorithm for oscillating values (progresses one step per call)
  * 
  * @param field Pointer to the field containing algorithm parameters
- * @param current_time Current simulation time in seconds
  * @return Calculated value based on sine wave function
  */
-sim_value_t sim_algo_sine_wave(sim_field_t* field, float current_time) {
+sim_value_t sim_algo_sine_wave(sim_field_t* field) {
     sim_value_t result = {0};
     
     if (!field || !field->params) return result;
     
+    // Check if field is active before applying decay
+    if (field->active) {
     // Get parameters for the sine wave calculation
-    cJSON* base_value = cJSON_GetObjectItem(field->params, "base_value");
-    cJSON* amplitude = cJSON_GetObjectItem(field->params, "amplitude");
-    cJSON* frequency = cJSON_GetObjectItem(field->params, "frequency");
-    cJSON* phase_offset = cJSON_GetObjectItem(field->params, "phase_offset");
+    float base = field->base_value.f;
+    float amp = field->amplitude.f;
+    float freq = field->frequency.f;
     
-    float base = base_value && cJSON_IsNumber(base_value) ? (float)cJSON_GetNumberValue(base_value) : 0.0f;
-    float amp = amplitude && cJSON_IsNumber(amplitude) ? (float)cJSON_GetNumberValue(amplitude) : 1.0f;
-    float freq = frequency && cJSON_IsNumber(frequency) ? (float)cJSON_GetNumberValue(frequency) : 1.0f;
-    float phase = phase_offset && cJSON_IsNumber(phase_offset) ? (float)cJSON_GetNumberValue(phase_offset) : 0.0f;
-    
-    // Calculate sine wave value
-    float elapsed_time = current_time - field->start_time;
-    float sine_value = base + amp * sinf((elapsed_time * freq) + phase);
+    // Initialize phase accumulator if not already present
+    if (field->phase_acc.f < 0.0f) {
+        field->phase_acc.f = 0.0f;
+    }
+
+    // Calculate sine value based on current phase
+    float sine_value = base + amp * sinf(field->phase_acc.f);
+
+    // Advance phase for next call
+    field->phase_acc.f += freq;
+
+    // Keep phase in [0, 2π] for numerical stability
+    if (field->phase_acc.f > 2.0f * M_PI) {
+        field->phase_acc.f = 0.0f;
+    }
 
     result.f = sine_value;
-
+    } else {
+        result.f = field->current_value.f;
+    }
     return result;
 }
 
-
-sim_value_t sim_algo_linear_decay(sim_field_t* field, float current_time) {
-    sim_value_t result = {0};
-    
-    if (!field || !field->params) return result;
-    
-    // Get parameters
-    cJSON* start_value = cJSON_GetObjectItem(field->params, "start_value");
-    cJSON* end_value = cJSON_GetObjectItem(field->params, "end_value");
-    cJSON* duration = cJSON_GetObjectItem(field->params, "duration_seconds");
-    
-    float start_val = start_value && cJSON_IsNumber(start_value) ? (float)cJSON_GetNumberValue(start_value) : 100.0f;
-    float end_val = end_value && cJSON_IsNumber(end_value) ? (float)cJSON_GetNumberValue(end_value) : 0.0f;
-    float duration_sec = duration && cJSON_IsNumber(duration) ? (float)cJSON_GetNumberValue(duration) : 1.0f;
-    
-    // Calculate current progress (0.0 to 1.0)
-    float elapsed_time = current_time - field->start_time;
-    float progress = elapsed_time / duration_sec;
-    
-    // Clamp progress between 0 and 1
-    if (progress < 0.0f) progress = 0.0f;
-    if (progress > 1.0f) progress = 1.0f;
-    
-    // Linear interpolation from start to end
-    float current_value = start_val + (end_val - start_val) * progress;
-
-    result.f = current_value;
-
-    return result;
-}
-
-/** 
-* Linear decay algorithm for rapid decreasing values over time.
- * Values decrease linearly from start_value to end_value over duration_seconds.
+/**
+* Linear decay algorithm for decreasing values over time.
+ * Values decrease linearly from current_value by decay rate each call, until they reach min_value.
  * 
  * @param field Pointer to the field containing algorithm parameters
- * @param current_time Current simulation time in seconds
- * @return Calculated value based on rapid linear decay
-*/
-sim_value_t sim_algo_rapid_linear_decay(sim_field_t* field, float current_time) {
+ * @return Calculated value based on linear decay
+ */
+sim_value_t sim_algo_linear_decay(sim_field_t* field) {
     sim_value_t result = {0};
     
     if (!field || !field->params) return result;
     
     // Get parameters
-    static float start_val = 0.0f; 
+    float current_value = field->current_value.f;
+    float min_value = field->min_value.f;
+    float decay_rate = field->rate.f;
+    
+    // Check if field is active before applying decay
+    if (field->active) {
+        // Calculate decayed value based on decay rate current value
+        float decayed_value = current_value - decay_rate;
 
-    if(!field->rapid_algo_initialized) {
-        start_val = field->current_value.f; 
-        field->rapid_algo_initialized = true;
+        if (decayed_value < min_value) {
+            decayed_value = min_value;
+        }
+
+        result.f = decayed_value;
+
+    } else {
+        result.f = current_value;
     }
-
-    cJSON* end_value = cJSON_GetObjectItem(field->params, "end_value");
-    cJSON* rapid_duration = cJSON_GetObjectItem(field->params, "rapid_duration_seconds");
-
-    float end_val = end_value && cJSON_IsNumber(end_value) ? (float)cJSON_GetNumberValue(end_value) : 0.0f;
-    float rapid_duration_sec = rapid_duration && cJSON_IsNumber(rapid_duration) ? (float)cJSON_GetNumberValue(rapid_duration) : 1.0f;
-    
-    // Calculate current progress (0.0 to 1.0)
-    float elapsed_time = current_time - field->start_time;
-    float progress = elapsed_time / rapid_duration_sec;
-    
-    // Clamp progress between 0 and 1
-    if (progress < 0.0f) progress = 0.0f;
-    if (progress > 1.0f) progress = 1.0f;
-    
-    // Linear interpolation from start to end
-    float current_value = start_val + (end_val - start_val) * progress;
-    result.f = current_value;
-
-    return result;
-}
-
-/** 
-* Linear growth algorithm for rapid increasing values over time.
- * Values increase linearly from start_value at growth_rate per second.
- * 
- * @param field Pointer to the field containing algorithm parameters
- * @param current_time Current simulation time in seconds
- * @return Calculated value based on rapid linear growth
-*/
-sim_value_t sim_algo_rapid_linear_growth(sim_field_t* field, float current_time) {
-    sim_value_t result = {0};
-    
-    if (!field || !field->params) return result;
-    
-    // Get parameters
-    static float start_val = 0.0f; 
-
-    if(!field->rapid_algo_initialized) {
-        start_val = field->current_value.f; 
-        field->rapid_algo_initialized = true;
-    }
-
-    cJSON* rapid_growth_rate = cJSON_GetObjectItem(field->params, "rapid_growth_rate");
-
-    float rapid_rate = rapid_growth_rate && cJSON_IsNumber(rapid_growth_rate) ? (float)cJSON_GetNumberValue(rapid_growth_rate) : 1.0f;
-
-
-    // Calculate current value based on growth rate
-    float elapsed_time = current_time - field->start_time;
-    float current_value = start_val + (rapid_rate * elapsed_time);
-    
-
-
-    result.f = current_value;
 
     return result;
 }
 
 /**
  * Linear growth algorithm for increasing values over time.
- * Values increase linearly from start_value at growth_rate per second.
+ * Values increase linearly from current_value by growth rate each call, until they reach max_value.
  * 
  * @param field Pointer to the field containing algorithm parameters
- * @param current_time Current simulation time in seconds
  * @return Calculated value based on linear growth
  */
-sim_value_t sim_algo_linear_growth(sim_field_t* field, float current_time) {
+sim_value_t sim_algo_linear_growth(sim_field_t* field) {
     sim_value_t result = {0};
     
     if (!field || !field->params) return result;
     
     // Get parameters
-    cJSON* start_value = cJSON_GetObjectItem(field->params, "start_value");
-    cJSON* growth_rate = cJSON_GetObjectItem(field->params, "growth_rate");
-    cJSON* max_value = cJSON_GetObjectItem(field->params, "max_value");
+    float current_value = field->current_value.f;
+    float max_value = field->max_value.f;
+    float growth_rate = field->rate.f;
     
-    float start_val = start_value && cJSON_IsNumber(start_value) ? (float)cJSON_GetNumberValue(start_value) : 0.0f;
-    float rate = growth_rate && cJSON_IsNumber(growth_rate) ? (float)cJSON_GetNumberValue(growth_rate) : 1.0f;
-    float max_val = max_value && cJSON_IsNumber(max_value) ? (float)cJSON_GetNumberValue(max_value) : INFINITY;
-    
-    // Calculate current value based on growth rate
-    float elapsed_time = current_time - field->start_time;
-    float current_value = start_val + (rate * elapsed_time);
-    
-    // Clamp to maximum value if specified
-    if (current_value > max_val) {
-        current_value = max_val;
-    }
+    // Check if field is active before applying growth
+    if (field->active) {
+        // Calculate grown value based on growth rate current value
+        float grown_value = current_value + growth_rate;
 
-    result.f = current_value;
+        if (grown_value > max_value) {
+            grown_value = max_value;
+        }
+
+        result.f = grown_value;
+
+    } else {
+        result.f = current_value;
+    }
 
     return result;
 }
 
 /**
-* Linear growth algorithm for increasing values over time with a constant growth rate.
- * Values increase linearly from start_value at growth_rate per second, regardless of elapsed time.
+* Constant value algorithm that keeps the field at a constant value specified by the "constant_value" parameter.
  * 
  * @param field Pointer to the field containing algorithm parameters
- * @param current_time Current simulation time in seconds
- * @return Calculated value based on linear growth with constant rate
-*/
-sim_value_t sim_algo_linear_growth_constant(sim_field_t* field, float current_time) {
+ * @return Constant value specified in parameters
+ */
+sim_value_t sim_algo_constant_value(sim_field_t* field) {
     sim_value_t result = {0};
     
     if (!field || !field->params) return result;
     
-    // Get parameters
-    cJSON* growth_rate = cJSON_GetObjectItem(field->params, "growth_rate");
-    cJSON* max_value = cJSON_GetObjectItem(field->params, "end_value_constant_growth");
-
     
-    float rate = growth_rate && cJSON_IsNumber(growth_rate) ? (float)cJSON_GetNumberValue(growth_rate) : 1.0f;
-    float max_val = max_value && cJSON_IsNumber(max_value) ? (float)cJSON_GetNumberValue(max_value) : INFINITY;
-    
-    // Calculate current value based on growth rate
-    float current_value = field->current_value.f + (rate);
-
-    // Clamp to maximum value if specified
-    if (current_value > max_val) {
-        current_value = max_val;
-    }
-    
-    result.f = current_value;
-
-    return result;
-}
-
-/**
-* Linear decay algorithm for decreasing values over time with a constant decay rate.
- * Values decrease linearly from start_value at decay_rate per second, regardless of elapsed time.
-    * Values will not go below end_value if specified.
- * @param field Pointer to the field containing algorithm parameters
-*/
-
-sim_value_t sim_algo_linear_decay_constant(sim_field_t* field, float current_time) {
-    sim_value_t result = {0};
-    
-    if (!field || !field->params) return result;
-    
-    // Get parameters
-    cJSON* decay_rate = cJSON_GetObjectItem(field->params, "decay_rate");
-    cJSON* end_value = cJSON_GetObjectItem(field->params, "end_value_constant_decay");
-    
-    float rate = decay_rate && cJSON_IsNumber(decay_rate) ? (float)cJSON_GetNumberValue(decay_rate) : 1.0f;
-    float end_val = end_value && cJSON_IsNumber(end_value) ? (float)cJSON_GetNumberValue(end_value) : -INFINITY;
-    
-    // Calculate current value based on decay rate
-    float elapsed_time = current_time - field->start_time;
-    float current_value = field->current_value.f - (rate);
-    
-    // Clamp to minimum value if specified
-    if (current_value < end_val) {
-        current_value = end_val;
-    }
-
-    result.f = current_value;
+    result.f = field->current_value.f;
 
     return result;
 }
@@ -258,15 +141,19 @@ sim_value_t sim_algo_linear_decay_constant(sim_field_t* field, float current_tim
  * Evaluates a mathematical formula using values from other fields as inputs.
  * 
  * @param field Pointer to the field containing algorithm parameters
- * @param current_time Current simulation time in seconds (unused for dependent values)
  * @param engine Pointer to the simulation engine for accessing other field values
  * @return Calculated value based on formula evaluation
  */
-sim_value_t sim_algo_dependent_value(sim_field_t* field, float current_time, sim_engine_t* engine) {
+sim_value_t sim_algo_dependent_value(sim_field_t* field, sim_engine_t* engine) {
     sim_value_t result = {0};
     
     if (!field || !field->params || !engine) return result;
-    
+
+    if(field->active == false) {
+        result.f = field->current_value.f;
+        return result;
+    }
+
     // Get formula parameter
     cJSON* formula = cJSON_GetObjectItem(field->params, "formula");
     if (!formula || !cJSON_IsString(formula)) {
@@ -289,11 +176,10 @@ sim_value_t sim_algo_dependent_value(sim_field_t* field, float current_time, sim
  * Reads the specified field from data/{file_path}.
  *
  * @param field Pointer to the field containing algorithm parameters
- * @param current_time Current simulation time (unused for external values)
  * @param engine Pointer to the simulation engine
  * @return Value fetched from external JSON file
  */
-sim_value_t sim_algo_external_value(sim_field_t* field, float current_time, sim_engine_t* engine) {
+sim_value_t sim_algo_external_value(sim_field_t* field, sim_engine_t* engine) {
     sim_value_t result = {0};
 
     if (!field || !field->params || !engine) return result;
@@ -381,80 +267,6 @@ sim_value_t sim_algo_external_value(sim_field_t* field, float current_time, sim_
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////
-//                          Algorithm Validation
-///////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Validates parameters for the sine wave algorithm.
- * Checks that required base_value parameter is present and is a number.
- * 
- * @param params JSON object containing algorithm parameters
- * @return true if parameters are valid, false otherwise
- */
-bool sim_algo_validate_sine_wave_params(cJSON* params) {
-    if (!params) return false;
-    
-    cJSON* base_value = cJSON_GetObjectItem(params, "base_value");
-    if (!base_value || !cJSON_IsNumber(base_value)) return false;
-    
-    // Other parameters are optional with defaults
-    return true;
-}
-
-/**
- * Validates parameters for the linear decay algorithm.
- * Checks that required start_value, end_value, and duration_seconds parameters are present.
- * 
- * @param params JSON object containing algorithm parameters
- * @return true if parameters are valid, false otherwise
- */
-bool sim_algo_validate_linear_decay_params(cJSON* params) {
-    if (!params) return false;
-    
-    cJSON* start_value = cJSON_GetObjectItem(params, "start_value");
-    cJSON* end_value = cJSON_GetObjectItem(params, "end_value");
-    cJSON* duration = cJSON_GetObjectItem(params, "duration_seconds");
-    
-    if (!start_value || !cJSON_IsNumber(start_value)) return false;
-    if (!end_value || !cJSON_IsNumber(end_value)) return false;
-    if (!duration || !cJSON_IsNumber(duration)) return false;
-    
-    return true;
-}
-
-/**
- * Validates parameters for the linear growth algorithm.
- * Checks that required growth_rate parameter is present and is a number.
- * 
- * @param params JSON object containing algorithm parameters
- * @return true if parameters are valid, false otherwise
- */
-bool sim_algo_validate_linear_growth_params(cJSON* params) {
-    if (!params) return false;
-    
-    cJSON* growth_rate = cJSON_GetObjectItem(params, "growth_rate");
-    if (!growth_rate || !cJSON_IsNumber(growth_rate)) return false;
-    
-    // start_value and max_value are optional
-    return true;
-}
-
-/**
- * Validates parameters for the dependent value algorithm.
- * Checks that required formula parameter is present and is a string.
- * 
- * @param params JSON object containing algorithm parameters
- * @return true if parameters are valid, false otherwise
- */
-bool sim_algo_validate_dependent_value_params(cJSON* params) {
-    if (!params) return false;
-    
-    cJSON* formula = cJSON_GetObjectItem(params, "formula");
-    if (!formula || !cJSON_IsString(formula)) return false;
-    
-    return true;
-}
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                            Utility Functions
@@ -631,10 +443,8 @@ sim_algorithm_type_t sim_algo_parse_type_string(const char* algo_string) {
         return SIM_ALGO_DEPENDENT_VALUE;
     } else if (strcmp(algo_string, "external_value") == 0) {
         return SIM_ALGO_EXTERNAL_VALUE;
-    } else if (strcmp(algo_string, "linear_growth_constant") == 0) {
-        return SIM_ALGO_LINEAR_GROWTH_CONSTANT;
-    } else if (strcmp(algo_string, "linear_decay_constant") == 0) {
-        return SIM_ALGO_LINEAR_DECAY_CONSTANT;
+    } else if (strcmp(algo_string, "constant_value") == 0) {
+        return SIM_ALGO_CONSTANT_VALUE;
     }
     
     return SIM_ALGO_SINE_WAVE;  // Default algorithm
@@ -659,10 +469,8 @@ const char* sim_algo_type_to_string(sim_algorithm_type_t type) {
             return "dependent_value";
         case SIM_ALGO_EXTERNAL_VALUE:
             return "external_value";
-        case SIM_ALGO_LINEAR_GROWTH_CONSTANT:
-            return "linear_growth_constant";
-        case SIM_ALGO_LINEAR_DECAY_CONSTANT:
-            return "linear_decay_constant";
+        case SIM_ALGO_CONSTANT_VALUE:
+            return "constant_value";
         default:
             return "unknown";
     }

@@ -66,6 +66,7 @@ void sim_engine_destroy(sim_engine_t* engine) {
     free(engine->components);
     free(engine->update_order);
     free(engine->dcu_field_settings);
+    free(engine->uia_field_settings);
     free(engine);
 }
 
@@ -207,6 +208,28 @@ bool sim_engine_load_component(sim_engine_t* engine, const char* json_file_path)
         field->algorithm = sim_algo_parse_type_string(cJSON_GetStringValue(algorithm));
         field->starting_algorithm = field->algorithm; // Store the starting algorithm for reset purposes
         
+        //Parse min_value, max_value, and start_value (base_value) for use in algorithms and for reset purposes
+        cJSON* min_value = cJSON_GetObjectItem(field_json, "min_value");
+        cJSON* max_value = cJSON_GetObjectItem(field_json, "max_value");
+        cJSON* start_value = cJSON_GetObjectItem(field_json, "start_value");
+        cJSON* base_value = cJSON_GetObjectItem(field_json, "base_value");
+
+        field->min_value.f = (min_value && cJSON_IsNumber(min_value)) ? cJSON_GetNumberValue(min_value) : 0.0f;
+        field->max_value.f = (max_value && cJSON_IsNumber(max_value)) ? cJSON_GetNumberValue(max_value) : 100.0f;
+        field->base_value.f = (base_value && cJSON_IsNumber(base_value)) ? cJSON_GetNumberValue(base_value) : 0.0f; 
+        field->start_value.f = (start_value && cJSON_IsNumber(start_value)) ? cJSON_GetNumberValue(start_value) : 0.0f; //if start_value is not provided, use base_value as the starting value
+
+        //parse additional algorithm parameters for use in algorithms and store in field struct for reset purposes
+        cJSON* amplitude = cJSON_GetObjectItem(field_json, "amplitude");
+        cJSON* frequency = cJSON_GetObjectItem(field_json, "frequency");
+        cJSON* phase_acc = cJSON_GetObjectItem(field_json, "phase");
+        cJSON* rate = cJSON_GetObjectItem(field_json, "rate");
+
+        field->amplitude.f = (amplitude && cJSON_IsNumber(amplitude)) ? cJSON_GetNumberValue(amplitude) : 0.0f;
+        field->frequency.f = (frequency && cJSON_IsNumber(frequency)) ? cJSON_GetNumberValue(frequency) : 0.0f;
+        field->phase_acc.f = (phase_acc && cJSON_IsNumber(phase_acc)) ? cJSON_GetNumberValue(phase_acc) : 0.0f;
+        field->rate.f = (rate && cJSON_IsNumber(rate)) ? cJSON_GetNumberValue(rate) : 0.0f;
+        
         // Parse type (always float)
         field->type = SIM_TYPE_FLOAT;
         
@@ -230,9 +253,8 @@ bool sim_engine_load_component(sim_engine_t* engine, const char* json_file_path)
             field->depends_on = NULL;
         }
 
-        field->run_time = 0.0f; 
+
         field->active = true; //active by default, can be deactivated by DCU commands for certain fields
-        field->rapid_algo_initialized = false;
         field->initialized = false;
         field_idx++;
     }
@@ -361,62 +383,31 @@ bool sim_engine_initialize(sim_engine_t* engine) {
         engine->dcu_field_settings->co2 = false;
         printf("DCU field settings initialized\n");
 
+    //initilize the UIA field settings
+        engine->uia_field_settings = malloc(sizeof(sim_UIA_field_settings_t));
+        engine->uia_field_settings->eva1_power = false;
+        engine->uia_field_settings->eva1_oxy = false;
+        engine->uia_field_settings->eva1_water_supply = false;
+        engine->uia_field_settings->eva1_water_waste = false;
+        engine->uia_field_settings->eva2_power = false;
+        engine->uia_field_settings->eva2_oxy = false;
+        engine->uia_field_settings->eva2_water_supply = false;
+        engine->uia_field_settings->eva2_water_waste = false;
+        engine->uia_field_settings->oxy_vent = false;
+        engine->uia_field_settings->depress = false;
+        printf("UIA field settings initialized\n");
+
         engine->error_time = time_to_throw_error();
         engine->num_task_board_errors = INITIAL_NUM_TASK_BOARD_ERRORS; //initialize number of task board errors to 0 at the start of each simulation run
-        engine->time_to_complete_task_board = 0;
+        engine->time_to_complete_task_board = -10; //unreachable value
         engine->error_type = NUM_ERRORS; // set to NUM_ERRORS to signify no error, will be set to 0,1,2..NUM_ERRORS-1 to signify different errors when it's time to throw an error
     
-    // Initialize all fields
+    
+        // Initialize all fields
     for (int i = 0; i < engine->total_field_count; i++) {
         sim_field_t* field = engine->update_order[i];
 
-        // Find the component this field belongs to and use its simulation time
-        sim_component_t* component = NULL;
-        for (int j = 0; j < engine->component_count; j++) {
-            if (strcmp(engine->components[j].component_name, field->component_name) == 0) {
-                component = &engine->components[j];
-                break;
-            }
-        }
 
-        field->start_time = component ? component->simulation_time : 0.0f;
-
-        field->run_time = 0.0f;
-
-        
-        
-        //set active to true by default, will be set to false for fields that depend on DCU commands until the correct command is received
-        if(strncmp(field->field_name, "primary_battery_level", 21) == 0 && !(engine->dcu_field_settings->battery_lu == false && engine->dcu_field_settings->battery_ps == true)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "secondary_battery_level", 23) == 0 && !(engine->dcu_field_settings->battery_lu == false && engine->dcu_field_settings->battery_ps == false)) {
-            field->active = false;
-        }
-
-        if(strncmp(field->field_name, "oxy_pri_storage", 15) == 0 && (engine->dcu_field_settings->o2 == false)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "oxy_sec_storage", 15) == 0 && (engine->dcu_field_settings->o2 == true)) {
-            field->active = false;
-        }
-
-        if(strncmp(field->field_name, "fan_pri_rpm", 11) == 0 && (engine->dcu_field_settings->fan == false)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "fan_sec_rpm", 11) == 0 && (engine->dcu_field_settings->fan == true)) {
-            field->active = false;
-        }
-
-        if(strncmp(field->field_name, "coolant_liquid_pressure", 23) == 0 && (engine->dcu_field_settings->pump == false)) {
-            field->active = false;
-        }
-
-        if(strncmp(field->field_name, "scrubber_a_co2_storage", 22) == 0 && (engine->dcu_field_settings->co2 == false)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "scrubber_b_co2_storage", 22) == 0 && (engine->dcu_field_settings->co2 == true)) {
-            field->active = false;
-        }
-        
-
-        field->initialized = true;
-        
         // Set initial values based on algorithm
         switch (field->algorithm) {
             case SIM_ALGO_SINE_WAVE: {
@@ -427,20 +418,6 @@ bool sim_engine_initialize(sim_engine_t* engine) {
                 break;
             }
             case SIM_ALGO_LINEAR_DECAY: {
-                cJSON* start_value = cJSON_GetObjectItem(field->params, "start_value");
-                if (start_value && cJSON_IsNumber(start_value)) {
-                    field->current_value.f = (float)cJSON_GetNumberValue(start_value);
-                }
-                break;
-            }
-            case SIM_ALGO_LINEAR_DECAY_CONSTANT: {
-                cJSON* start_value = cJSON_GetObjectItem(field->params, "start_value");
-                if (start_value && cJSON_IsNumber(start_value)) {
-                    field->current_value.f = (float)cJSON_GetNumberValue(start_value);
-                }
-                break;
-            }
-            case SIM_ALGO_LINEAR_GROWTH_CONSTANT: {
                 cJSON* start_value = cJSON_GetObjectItem(field->params, "start_value");
                 if (start_value && cJSON_IsNumber(start_value)) {
                     field->current_value.f = (float)cJSON_GetNumberValue(start_value);
@@ -466,9 +443,20 @@ bool sim_engine_initialize(sim_engine_t* engine) {
                 field->current_value.f = 0.0f;
                 break;
             }
+            case SIM_ALGO_CONSTANT_VALUE: {
+                cJSON* value = cJSON_GetObjectItem(field->params, "value");
+                if (value && cJSON_IsNumber(value)) {
+                    field->current_value.f = (float)cJSON_GetNumberValue(value);
+                } else {                    field->current_value.f = 0.0f;
+                }                break;
+            } default: {
+                field->current_value.f = 0.0f;
+                return false;
+                break;
+            }
         }
-        
-        field->previous_value = field->current_value;
+
+        field->initialized = true;
     }
     
     engine->initialized = true;
@@ -486,16 +474,15 @@ bool sim_engine_initialize(sim_engine_t* engine) {
  * @param delta_time Time elapsed since last update (in seconds)
  */
 void sim_engine_update(sim_engine_t* engine, float delta_time) {
+    
     if (!engine || !engine->initialized) return;
-
     // First, advance simulation time for all running components
     for (int i = 0; i < engine->component_count; i++) {
         if (engine->components[i].running) {
             engine->components[i].simulation_time += delta_time;
         }
     }
-
-    //Next, advance simulation time for all fields that are running
+ 
     for(int i = 0; i < engine->total_field_count; i++) {
         sim_field_t* field = engine->update_order[i];
 
@@ -506,44 +493,6 @@ void sim_engine_update(sim_engine_t* engine, float delta_time) {
                 component = &engine->components[j];
                 break;
             }
-        }
-
-        
-        
-        //set active to true by default, will be set to false for fields that depend on DCU commands until the correct command is received
-        if(strncmp(field->field_name, "primary_battery_level", 21) == 0 && !(engine->dcu_field_settings->battery_lu == false && engine->dcu_field_settings->battery_ps == true)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "secondary_battery_level", 23) == 0 && !(engine->dcu_field_settings->battery_lu == false && engine->dcu_field_settings->battery_ps == false)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "oxy_pri_storage", 15) == 0 && (engine->dcu_field_settings->o2 == false)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "oxy_sec_storage", 15) == 0 && (engine->dcu_field_settings->o2 == true)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "fan_pri_rpm", 11) == 0 && (engine->dcu_field_settings->fan == false)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "fan_sec_rpm", 11) == 0 && (engine->dcu_field_settings->fan == true)) {
-            field->active = false;
-        } else if(strncmp(field->field_name, "coolant_liquid_pressure", 23) == 0 && (engine->dcu_field_settings->pump == false)) {
-            field->active = false;
-        } else {
-            field->active = true;
-        }
-
-        //error overrides active status, so if an error is active for a field, it should be active regardless of DCU settings
-        if((engine->error_type == SUIT_PRESSURE_OXY_LOW) && (strcmp(field->field_name, "oxy_pri_storage") == 0)) {
-            field->active = true;
-        } else if((engine->error_type == SUIT_PRESSURE_OXY_HIGH) && (strcmp(field->field_name, "oxy_pri_storage") == 0)) {
-            field->active = true;
-        } else if((engine->error_type == FAN_RPM_HIGH) && (strcmp(field->field_name, "fan_pri_rpm") == 0)) {
-            field->active = true;
-        } else if((engine->error_type == FAN_RPM_LOW) && (strcmp(field->field_name, "fan_pri_rpm") == 0)) {
-            field->active = true;
-        }
-
-        
-        // Only update run_time if component is running
-        if (component && component->running && field->active) {
-            field->run_time += delta_time;
         }
             
     }
@@ -564,6 +513,7 @@ void sim_engine_update(sim_engine_t* engine, float delta_time) {
         }
     }
 
+    
 
     // Update all fields in dependency order (only for running components)
     for (int i = 0; i < engine->total_field_count; i++) {
@@ -581,36 +531,26 @@ void sim_engine_update(sim_engine_t* engine, float delta_time) {
         // Only update if component is running and DCU in correct state (if field depends on DCU commands)
         if (!component || !component->running) continue;
 
-        field->previous_value = field->current_value;
-
         switch (field->algorithm) {
             case SIM_ALGO_SINE_WAVE:
-                field->current_value = sim_algo_sine_wave(field, field->run_time);
+                field->current_value = sim_algo_sine_wave(field);
                 break;
             case SIM_ALGO_LINEAR_DECAY:
-                field->current_value = sim_algo_linear_decay(field, field->run_time);
-                
-                break;
-            case SIM_ALGO_RAPID_LINEAR_DECAY:
-                field->current_value = sim_algo_rapid_linear_decay(field, field->run_time);
-                break;
-            case SIM_ALGO_RAPID_LINEAR_GROWTH:
-                field->current_value = sim_algo_rapid_linear_growth(field, field->run_time);
+                field->current_value = sim_algo_linear_decay(field);
                 break;
             case SIM_ALGO_LINEAR_GROWTH:
-                field->current_value = sim_algo_linear_growth(field, field->run_time);
+                field->current_value = sim_algo_linear_growth(field);
                 break;
             case SIM_ALGO_DEPENDENT_VALUE:
-                field->current_value = sim_algo_dependent_value(field,  field->run_time, engine);
+                field->current_value = sim_algo_dependent_value(field, engine);
                 break;
             case SIM_ALGO_EXTERNAL_VALUE:
-                field->current_value = sim_algo_external_value(field, field->run_time, engine);
+                field->current_value = sim_algo_external_value(field, engine);
                 break;
-            case SIM_ALGO_LINEAR_GROWTH_CONSTANT:
-                field->current_value = sim_algo_linear_growth_constant(field, field->run_time);
+            case SIM_ALGO_CONSTANT_VALUE:
+                field->current_value = sim_algo_constant_value(field);
                 break;
-            case SIM_ALGO_LINEAR_DECAY_CONSTANT:
-                field->current_value = sim_algo_linear_decay_constant(field, field->run_time);
+            default:
                 break;
         }
     }
@@ -686,122 +626,17 @@ void sim_engine_reset_component(sim_engine_t* engine, const char* component_name
         return;
     }
 
-    
-
-    if(strcmp(component_name, "eva1") == 0) {
-        //recalculate error time and type for eva1 when it is reset, to simulate different error scenarios on each run
-        target_component->simulation_time = 0.0f;
-        engine->error_time = time_to_throw_error();
-        engine->error_type = error_to_throw();
-    }
-
-    // Reset all fields of this component
-    for (int i = 0; i < engine->total_field_count; i++) {
-        sim_field_t* field = engine->update_order[i];
-        if (field && strcmp(field->component_name, component_name) == 0) {
-            // Reset field timing to component time (which is now 0)
-            field->start_time = target_component->simulation_time;
-            field->run_time = 0.0f; 
-            field->rapid_algo_initialized = false;
-            
-            // Set initial values based on algorithm
-            switch (field->starting_algorithm) {
-                case SIM_ALGO_SINE_WAVE: {
-                    field->algorithm = SIM_ALGO_SINE_WAVE; // Reset to original algorithm
-                    cJSON* base_value = cJSON_GetObjectItem(field->params, "base_value");
-                    if (base_value && cJSON_IsNumber(base_value)) {
-                        field->current_value.f = (float)cJSON_GetNumberValue(base_value);
-                    }
-                    break;
-                }
-                case SIM_ALGO_LINEAR_DECAY: {
-                    field->algorithm = SIM_ALGO_LINEAR_DECAY; // Reset to original algorithm
-                    cJSON* start_value = cJSON_GetObjectItem(field->params, "start_value");
-                    if (start_value && cJSON_IsNumber(start_value)) {
-                        field->current_value.f = (float)cJSON_GetNumberValue(start_value);
-                    }
-                    break;
-                }
-                case SIM_ALGO_LINEAR_GROWTH: {
-                    field->algorithm = SIM_ALGO_LINEAR_GROWTH; // Reset to original algorithm
-                    cJSON* start_value = cJSON_GetObjectItem(field->params, "start_value");
-                    if (start_value && cJSON_IsNumber(start_value)) {
-                        field->current_value.f = (float)cJSON_GetNumberValue(start_value);
-                    } else {
-                        field->current_value.f = 0.0f;
-                    }
-                    break;
-                }
-                case SIM_ALGO_DEPENDENT_VALUE: {
-                    field->algorithm = SIM_ALGO_DEPENDENT_VALUE; // Reset to original algorithm
-                    // Will be calculated during first update
-                    field->current_value.f = 0.0f;
-                    break;
-                }
-                case SIM_ALGO_EXTERNAL_VALUE: {
-                    field->algorithm = SIM_ALGO_EXTERNAL_VALUE; // Reset to original algorithm
-                    // Check if reset_value is defined and update the file if callback is provided
-                    cJSON* reset_value = cJSON_GetObjectItem(field->params, "reset_value");
-                    if (reset_value && update_json) {
-                        cJSON* file_path_param = cJSON_GetObjectItem(field->params, "file_path");
-                        cJSON* field_path_param = cJSON_GetObjectItem(field->params, "field_path");
-
-                        if (file_path_param && cJSON_IsString(file_path_param) &&
-                            field_path_param && cJSON_IsString(field_path_param)) {
-
-                            const char* file_path = cJSON_GetStringValue(file_path_param);
-                            const char* full_field_path = cJSON_GetStringValue(field_path_param);
-
-                            // Extract filename without extension (e.g., "ROVER.json" -> "ROVER")
-                            char filename[64];
-                            const char* ext = strrchr(file_path, '.');
-                            if (ext) {
-                                int len = ext - file_path;
-                                strncpy(filename, file_path, len);
-                                filename[len] = '\0';
-                            } else {
-                                strncpy(filename, file_path, sizeof(filename) - 1);
-                            }
-
-                            // Extract section and field name from full_field_path (e.g., "pr_telemetry.throttle")
-                            char field_path_copy[256];
-                            strncpy(field_path_copy, full_field_path, sizeof(field_path_copy) - 1);
-                            char* section = strtok(field_path_copy, ".");
-                            char* field_name = strtok(NULL, ".");
-
-                            if (section && field_name) {
-                                // Convert reset_value to string
-                                char value_str[256];
-                                if (cJSON_IsBool(reset_value)) {
-                                    snprintf(value_str, sizeof(value_str), "%s",
-                                           reset_value->type == cJSON_True ? "true" : "false");
-                                } else if (cJSON_IsNumber(reset_value)) {
-                                    snprintf(value_str, sizeof(value_str), "%g", reset_value->valuedouble);
-                                } else if (cJSON_IsString(reset_value)) {
-                                    snprintf(value_str, sizeof(value_str), "%s", reset_value->valuestring);
-                                } else {
-                                    field->current_value.f = 0.0f;
-                                    break;
-                                }
-
-                                // Call the update_json callback
-                                update_json(filename, section, field_name, value_str);
-                            }
-                        }
-                    }
-                    field->current_value.f = 0.0f;
-                    break;
-                }
-            }
-
-            field->previous_value = field->current_value;
-        }
+    //Reset all fields of the component to their initial state
+    for (int j = 0; j < target_component->field_count; j++) {
+        sim_field_t* field = &target_component->fields[j];
+        field->algorithm = field->starting_algorithm; // Reset to starting algorithm
+        field->current_value.f = field->start_value.f; // Reset to starting value
     }
 
     printf("Reset component '%s' simulation\n", component_name);
 }
 
-
+////////////////////////////////Error 
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                              Field Access

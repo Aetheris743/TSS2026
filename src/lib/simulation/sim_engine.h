@@ -14,7 +14,8 @@
 
 #define SIM_DATA_ROOT "data"
 #define SIM_CONFIG_ROOT "src/lib/simulation/config"
-#define INITIAL_NUM_TASK_BOARD_ERRORS 10
+
+#define INITIAL_NUM_TASK_BOARD_ERRORS 4
 
 ///////////////////////////////////////////////////////////////////////////////////
 //                                  Data Types
@@ -27,13 +28,10 @@ typedef enum {
 typedef enum {
     SIM_ALGO_SINE_WAVE,
     SIM_ALGO_LINEAR_DECAY,
-    SIM_ALGO_RAPID_LINEAR_DECAY,
-    SIM_ALGO_RAPID_LINEAR_GROWTH,
     SIM_ALGO_LINEAR_GROWTH,
     SIM_ALGO_DEPENDENT_VALUE,
     SIM_ALGO_EXTERNAL_VALUE,
-    SIM_ALGO_LINEAR_GROWTH_CONSTANT,
-    SIM_ALGO_LINEAR_DECAY_CONSTANT
+    SIM_ALGO_CONSTANT_VALUE
 } sim_algorithm_type_t;
 
 typedef union {
@@ -47,7 +45,14 @@ typedef struct {
     sim_algorithm_type_t algorithm;
     sim_algorithm_type_t starting_algorithm; // Store the original algorithm for reset purposes
     sim_value_t current_value;
-    sim_value_t previous_value;
+    sim_value_t min_value;
+    sim_value_t max_value;
+    sim_value_t start_value;
+    sim_value_t base_value; // Used for sine wave algorithm
+    sim_value_t amplitude; // Used for sine wave algorithm
+    sim_value_t frequency; // Used for sine wave algorithm
+    sim_value_t phase_acc; // Used for sine wave algorithm
+    sim_value_t rate; // Used for linear growth/decay algorithms
 
     // Algorithm parameters (parsed from JSON)
     cJSON* params;
@@ -57,10 +62,7 @@ typedef struct {
     int depends_count;
 
     // Internal state for algorithms
-    float run_time; //active time since component started
     bool active; //whether the field should be actively updating (used for fields that depend on DCU commands)
-    float start_time;
-    bool rapid_algo_initialized;
     bool initialized;
 } sim_field_t;
 
@@ -82,6 +84,19 @@ typedef struct {
 } sim_DCU_field_settings_t;
 
 typedef struct {
+    bool eva1_power;
+    bool eva1_oxy;
+    bool eva1_water_supply;
+    bool eva1_water_waste;
+    bool eva2_power;
+    bool eva2_oxy;
+    bool eva2_water_supply;
+    bool eva2_water_waste;
+    bool oxy_vent;
+    bool depress;
+} sim_UIA_field_settings_t;
+
+typedef struct {
     sim_component_t* components;
     int component_count;
 
@@ -95,6 +110,7 @@ typedef struct {
     int error_type;
 
     sim_DCU_field_settings_t* dcu_field_settings;
+    sim_UIA_field_settings_t* uia_field_settings;
 
     bool initialized;
 } sim_engine_t;

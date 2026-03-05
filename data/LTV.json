@@ -4,17 +4,8 @@
 		"last_known_y":	-10460.6
 	},
 	"signal":	{
-		"strength":	0,
+		"strength":	1,
 		"pings_left":	0,
-		"ping_requested":	false
-	},
-	"errors":	{
-		"recovery_mode":	false,
-		"dust_sensor":	false,
-		"power_distribution":	false,
-		"nav_system":	false,
-		"electronic_heater":	false,
-		"comms":	false,
-		"fuse": false
+		"ping_requested":	0
 	}
 }
