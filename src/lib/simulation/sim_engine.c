@@ -218,6 +218,7 @@ bool sim_engine_load_component(sim_engine_t* engine, const char* json_file_path)
         field->max_value.f = (max_value && cJSON_IsNumber(max_value)) ? cJSON_GetNumberValue(max_value) : 100.0f;
         field->base_value.f = (base_value && cJSON_IsNumber(base_value)) ? cJSON_GetNumberValue(base_value) : 0.0f; 
         field->start_value.f = (start_value && cJSON_IsNumber(start_value)) ? cJSON_GetNumberValue(start_value) : 0.0f; //if start_value is not provided, use base_value as the starting value
+        field->current_value.f = field->start_value.f; //initialize current value to start value
 
         //parse additional algorithm parameters for use in algorithms and store in field struct for reset purposes
         cJSON* amplitude = cJSON_GetObjectItem(field_json, "amplitude");
@@ -252,7 +253,6 @@ bool sim_engine_load_component(sim_engine_t* engine, const char* json_file_path)
             field->depends_count = 0;
             field->depends_on = NULL;
         }
-
 
         field->active = true; //active by default, can be deactivated by DCU commands for certain fields
         field->initialized = false;
@@ -444,7 +444,7 @@ bool sim_engine_initialize(sim_engine_t* engine) {
                 break;
             }
             case SIM_ALGO_CONSTANT_VALUE: {
-                cJSON* value = cJSON_GetObjectItem(field->params, "value");
+                cJSON* value = cJSON_GetObjectItem(field->params, "start_value");
                 if (value && cJSON_IsNumber(value)) {
                     field->current_value.f = (float)cJSON_GetNumberValue(value);
                 } else {                    field->current_value.f = 0.0f;

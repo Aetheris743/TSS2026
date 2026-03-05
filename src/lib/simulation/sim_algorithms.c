@@ -128,7 +128,9 @@ sim_value_t sim_algo_linear_growth(sim_field_t* field) {
 sim_value_t sim_algo_constant_value(sim_field_t* field) {
     sim_value_t result = {0};
     
-    if (!field || !field->params) return result;
+    if (!field || !field->params) {
+        return result;
+    } 
     
     
     result.f = field->current_value.f;

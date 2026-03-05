@@ -8,7 +8,7 @@
 #include <time.h>
 
 /////////flags//////////
-bool include_UIA_flag = true;
+bool include_UIA_flag = false;
 bool fan_error_flag = false;
 bool o2_error_flag = false;
 
@@ -83,7 +83,7 @@ void initialize_UIA_override_dependent_values(sim_engine_t* sim_engine) {
         printf("Simulation tried to access non-existent field 'eva1.coolant_storage' for UIA override initialization\n");
     }
 
-    //set eva1.fields.suit_pressure_oxy.end_value_constant_growth to 0 in the JSON file to keep at 0 until ready to grow
+    //set eva1.suit_pressure_oxy to 0 to keep at 0 until ready to grow
     sim_field_t* suit_pressure_oxy_field = sim_engine_find_field_within_component(eva1, "suit_pressure_oxy");
     if (suit_pressure_oxy_field) {
         suit_pressure_oxy_field->current_value.f = 0.0f;
@@ -649,7 +649,7 @@ void update_O2_error_state(sim_engine_t* sim_engine) {
         //rethrow the error if switched back to primary oxygen while an O2 error is still thrown to simulate the consequences of switching back to primary oxygen with an unresolved O2 error
         if(o2_low_error_thrown) {
             field->algorithm = SIM_ALGO_LINEAR_DECAY;
-            field->rate.f = OXY_RATE;
+            field->rate.f = OXY_ERROR_RATE;
             field->min_value.f = 0.0f; //allow suit o2 pressure to drop to 0 to simulate a critical low O2 pressure in the suit
             if(o2_error_flag == true) {
                 throw_O2_suit_pressure_low_error(sim_engine);
@@ -659,7 +659,7 @@ void update_O2_error_state(sim_engine_t* sim_engine) {
 
         if(o2_high_error_thrown) {
             field->algorithm = SIM_ALGO_LINEAR_GROWTH;
-            field->rate.f = OXY_RATE;
+            field->rate.f = OXY_ERROR_RATE;
             field->max_value.f = 4.2f; //allow suit o2 pressure to rise above nominal to simulate a critical high O2 pressure in the suit
             if(o2_error_flag == true) {
                 throw_O2_suit_pressure_high_error(sim_engine);
