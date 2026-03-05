@@ -170,6 +170,7 @@ These are the commands you can send to the server to fetch the telemetry data as
 | 0              | [ROVER.json](/data/ROVER.json) |
 | 1              | [EVA.json](/data/EVA.json)     |
 | 2              | [LTV.json](/data/LTV.json)     |
+| 3              | [LTV_ERRORS.json](data/LTV_ERRORS.json) |
 
 When fetching data, we recommend doing so in one second intervals. Telemetry data is calculated and updated in one second increments, so increasing the request rate in your programs will not make any difference.
 
