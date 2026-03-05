@@ -11,8 +11,10 @@
 | **[peripherals](./peripherals/)** | [dcu.jpeg](./peripherals/dcu.jpeg) | Display Control Unit image |
 |               | [uia.jpeg](./peripherals/uia.jpeg) | User Interface Assembly image |
 | **[procedures](./procedures/)** | [ev-team-procedure-timeline.pdf](./procedures/ev-team-procedure-timeline.pdf) | EV team session timeline |
+|               | [ev-team-coordinates.pdf](./procedures/ev-team-coordinates.pdf) | Fixed Rockyard Coordinates for LTV |
 |               | [ltv-repair-procedures.pdf](./procedures/ltv-repair-procedures.pdf) | LTV procedures for repair |
 |               | [pressurized-rover-procedure-timeline.pdf](./procedures/pressurized-rover-procedure-timeline.pdf) | Pressurized rover session timeline |
+|               | [pr-team-ltv-search-info.pdf](./procedures/pr-team-ltv-search-info.pdf) | Info for calculating search radius|
 | **[telemetry_ranges](./telemetry_ranges/)** | [eva-telemetry-ranges.pdf](./telemetry_ranges/eva-telemetry-ranges.pdf) | EVA telemetry parameter limits |
 |               | [rover-telemetry-ranges.pdf](./telemetry_ranges/rover-telemetry-ranges.pdf) | Rover telemetry parameter limits |
 | **[updates](./updates/)** | [updates.pdf](./updates/updates.pdf) | Tech Team Github General Update Log |
