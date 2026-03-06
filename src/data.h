@@ -20,6 +20,7 @@ struct backend_data_t {
     // Timing information
     uint32_t start_time;
     uint32_t server_up_time;
+    uint32_t time_since_last_ping;
 
     // DUST rover simulation
     int running_pr_sim;
@@ -43,6 +44,7 @@ void update_json_file(const char* filename, const char* section, const char* fie
 void sync_simulation_to_json(struct backend_data_t* backend);
 cJSON* get_json_file(const char* filename);
 void send_json_file(const char* filename, unsigned char* data);
+void send_recovery_mode_json_file(const char* filename, unsigned char* data);
 void update_eva_station_timing(void);
 void reset_eva_station_timing(void);
 void update_sim_DCU_field_settings(sim_engine_t* sim_engine);
@@ -137,6 +139,7 @@ static const udp_command_mapping_t udp_command_mappings[] = {
     
     // Ping LTV command
     {2050, "ltv.signal.ping_requested", "bool"},
+    {2051, "ltv.signal.ping_unlimited_requested", "bool"},
 
     {0, NULL, NULL} // Sentinel
 };

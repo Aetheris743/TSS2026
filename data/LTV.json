@@ -6,6 +6,7 @@
 	"signal":	{
 		"strength":	1,
 		"pings_left":	0,
-		"ping_requested":	0
+		"ping_requested":	0,
+		"ping_unlimited_requested":	0
 	}
 }

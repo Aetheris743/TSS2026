@@ -28,6 +28,8 @@ struct backend_data_t *init_backend() {
 
     // Set initial timing information
     backend->start_time = time(NULL);
+    backend->server_up_time = 0;
+    backend->time_since_last_ping = 0;
     backend->running_pr_sim = -1;
     backend->pr_sim_paused = false;
 
@@ -999,6 +1001,61 @@ bool is_recovery_mode_resolved() {
 }
 
 
+/**
+ * Just send JSON file recovery mode information part
+ * @param filename Name of file with the recovery mode information
+ * @param data Response buffer to populate with requested data
+ */
+void send_recovery_mode_json_file(const char* filename, unsigned char* data) {
+    // Load full JSON as cJSON object
+    cJSON* json = get_json_file(filename);
+    if (json == NULL) {
+        printf("Error: Could not load JSON file %s\n", filename);
+        return;
+    }
+
+    // Get the error_procedures array directly
+    cJSON* error_array = cJSON_GetObjectItem(json, "error_procedures");
+    if (!error_array || !cJSON_IsArray(error_array)) {
+        printf("Error: error_procedures not found or is not an array\n");
+        cJSON_Delete(json);
+        return;
+    }
+
+    // Get the first object in the array (Recovery Mode)
+    cJSON* first_error = cJSON_GetArrayItem(error_array, 0);
+    if (!first_error) {
+        printf("Error: error_procedures array is empty\n");
+        cJSON_Delete(json);
+        return;
+    }
+
+    // Create a new JSON object with only the first error
+    cJSON* send_json = cJSON_CreateObject();
+    cJSON* new_array = cJSON_CreateArray();
+    cJSON_AddItemToArray(new_array, cJSON_Duplicate(first_error, 1)); // deep copy
+    cJSON_AddItemToObject(send_json, "error_procedures", new_array);
+
+    // Convert new JSON object to string
+    char* json_str = cJSON_Print(send_json);
+    if (json_str == NULL) {
+        printf("Error: Failed to convert JSON to string\n");
+        cJSON_Delete(send_json);
+        cJSON_Delete(json);
+        return;
+    }
+
+    // Copy JSON string to data buffer
+    size_t json_len = strlen(json_str);
+    memcpy(data, json_str, json_len);
+    data[json_len] = '\0'; // Null terminate
+
+    // Cleanup
+    free(json_str);
+    cJSON_Delete(send_json);
+    cJSON_Delete(json);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 //                             UDP Request Handlers
 ///////////////////////////////////////////////////////////////////////////////////
@@ -1029,10 +1086,10 @@ void handle_udp_get_request(unsigned int command, unsigned char* data, struct ba
         case 3: //LTV_ERRORS data
             //only print this data if the Recovery Mode is resolved
             if(is_recovery_mode_resolved()) {
-            printf("Getting LTV error data.\n");
-            send_json_file("LTV_ERRORS", data);
+                printf("Getting LTV error data.\n");
+                send_json_file("LTV_ERRORS", data);
             } else {
-                printf("Recovery Mode not resolved, not sending LTV error data.\n");
+                send_recovery_mode_json_file("LTV_ERRORS", data);
             }
             break;
 

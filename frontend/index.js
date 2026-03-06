@@ -209,7 +209,6 @@ function setupEventListeners() {
     if (event.target.classList.contains("btn-ping")) {
       const now = Date.now();
       if (!window.lastPingTime) window.lastPingTime = 0;
-
       if (now - window.lastPingTime < 20000) {
         console.log("Ping ignored: 20-second cooldown");
         event.preventDefault();
@@ -225,7 +224,7 @@ function setupEventListeners() {
       // For action buttons, directly update the status field
       if (action === "start") {
         // Special handler to only allow pinging when the DUST sim is connected, @TODO see if this can be generalized later
-        if (path === "ltv.signal.ping_requested") {
+        if (path === "ltv.signal.ping_requested" || path === "ltv.signal.ping_unlimited_requested") {
           if (!dustConnected) {
             alert(
               "DUST simulator is not connected. Please refer to TSS documentation for learning how to connect to the simulator."

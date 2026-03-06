@@ -29,7 +29,7 @@
 		"secondary_battery_level":	0,
 		"rover_elapsed_time":	0,
 		"sim_running":	false,
-		"dust_connected":	true,
+		"dust_connected":	false,
 		"distance_from_base":	0,
 		"oxygen_tank":	100,
 		"battery_level":	0,
