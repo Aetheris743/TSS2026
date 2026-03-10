@@ -19,5 +19,20 @@
 			"description":	"Backup Fuse Error",
 			"needs_resolved":	false,
 			"procedures":	["1. Locate the fuse box by identifying a gray rectangular housing with copper fuses visible behind a white protective barrier", "2. Remove the protective barrier by unlatching protective locks and lifting the barrier out", "3. Locate the fuse disconnect by identifying the protruding handle towards the top of the housing", "4. Pull this handle to disconnect the fuse circuit", "5. Use the provided fuse-puller tool to safely remove the burnt fuse and properly discard it", "6. Locate the replacement fuse", "7. Using the fuse-puller tool, place the new fuse in the grips of the tool", "8. Insert the fuse into the empty slot, moderate force may be required", "9. Reinsert the fuse disconnect in the proper orientation", "10. Replace the white protective barrier and latch protective locks"]
+		}, {
+			"code":	"2130",
+			"description":	"Nav System Error",
+			"needs_resolved":	false,
+			"procedures":	[]
+		}, {
+			"code":	"2131",
+			"description":	"Lidar System Error",
+			"needs_resolved":	false,
+			"procedures":	[]
+		}, {
+			"code":	"2132",
+			"description":	"Comms System Error",
+			"needs_resolved":	false,
+			"procedures":	[]
 		}]
 }

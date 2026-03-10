@@ -55,13 +55,13 @@
 	},
 	"dcu":	{
 		"eva1":	{
-			"oxy":	true,
+			"oxy":	false,
 			"fan":	false,
 			"pump":	false,
 			"co2":	false,
 			"batt":	{
 				"lu":	false,
-				"ps":	true
+				"ps":	false
 			}
 		},
 		"eva2":	{
