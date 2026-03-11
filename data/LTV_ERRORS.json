@@ -1,9 +1,29 @@
 {
 	"error_procedures":	[{
 			"code":	"0000",
-			"description":	"Recovery Mode",
+			"description":	"Exit Recovery Mode (ERM)",
 			"needs_resolved":	true,
 			"procedures":	["1. -----", "2. -----", "3. -----"]
+		}, {
+			"code":	"2130",
+			"description":	"NAV Restart & Manual Return to Home ",
+			"needs_resolved":	false,
+			"procedures":	[]
+		}, {
+			"code":	"2129",
+			"description":	"Backup Fuse Error",
+			"needs_resolved":	true,
+			"procedures":	["1. Locate the fuse box by identifying a gray rectangular housing with copper fuses visible behind a white protective barrier", "2. Remove the protective barrier by unlatching protective locks and lifting the barrier out", "3. Locate the fuse disconnect by identifying the protruding handle towards the top of the housing", "4. Pull this handle to disconnect the fuse circuit", "5. Use the provided fuse-puller tool to safely remove the burnt fuse and properly discard it", "6. Locate the replacement fuse", "7. Using the fuse-puller tool, place the new fuse in the grips of the tool", "8. Insert the fuse into the empty slot, moderate force may be required", "9. Reinsert the fuse disconnect in the proper orientation", "10. Replace the white protective barrier and latch protective locks"]
+		}, {
+			"code":	"2132",
+			"description":	"Poor Comms RSSI",
+			"needs_resolved":	false,
+			"procedures":	[]
+		}, {
+			"code":	"2133",
+			"description":	"Power Subsystem Bus Error",
+			"needs_resolved":	true,
+			"procedures":	[]
 		}, {
 			"code":	"4155",
 			"description":	"Main Power Bus Error",
@@ -15,23 +35,8 @@
 			"needs_resolved":	true,
 			"procedures":	["1. Locate the dust sensor by identifying a cylindrical white housing smaller than the palm of a hand", "2. Rotate the sensor body counterclockwise to unscrew it from its base and stow properly", "3. Locate the replacement sensor and twist the protective cap counterclockwise to remove it, you may put the protective cap on the broken dust sensor", "4. Insert the replacement sensor into the base and rotate clockwise until moderately tight"]
 		}, {
-			"code":	"2129",
-			"description":	"Backup Fuse Error",
-			"needs_resolved":	true,
-			"procedures":	["1. Locate the fuse box by identifying a gray rectangular housing with copper fuses visible behind a white protective barrier", "2. Remove the protective barrier by unlatching protective locks and lifting the barrier out", "3. Locate the fuse disconnect by identifying the protruding handle towards the top of the housing", "4. Pull this handle to disconnect the fuse circuit", "5. Use the provided fuse-puller tool to safely remove the burnt fuse and properly discard it", "6. Locate the replacement fuse", "7. Using the fuse-puller tool, place the new fuse in the grips of the tool", "8. Insert the fuse into the empty slot, moderate force may be required", "9. Reinsert the fuse disconnect in the proper orientation", "10. Replace the white protective barrier and latch protective locks"]
-		}, {
-			"code":	"2130",
-			"description":	"Nav System Error",
-			"needs_resolved":	true,
-			"procedures":	[]
-		}, {
-			"code":	"2131",
-			"description":	"Lidar System Error",
-			"needs_resolved":	true,
-			"procedures":	[]
-		}, {
-			"code":	"2132",
-			"description":	"Comms System Error",
+			"code":	"2134",
+			"description":	"Thermal Regulation Error",
 			"needs_resolved":	true,
 			"procedures":	[]
 		}]

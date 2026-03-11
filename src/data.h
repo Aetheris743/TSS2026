@@ -131,14 +131,15 @@ static const udp_command_mapping_t udp_command_mappings[] = {
     {2021, "eva.imu.eva2.posy", "float"},
     {2022, "eva.imu.eva2.heading", "float"},
 
-    //LTV command
-    {2023, "ltv_errors.error_procedures.4.needs_resolved", "bool"},
-    {2024, "ltv_errors.error_procedures.5.needs_resolved", "bool"},
-    {2025, "ltv_errors.error_procedures.6.needs_resolved", "bool"},
-    {2026, "ltv.errors.nav_system", "bool"},
-    {2027, "ltv.errors.electronic_heater", "bool"},
-    {2028, "ltv.errors.comms", "bool"},
-    {2029, "ltv.errors.fuse", "bool"},
+    //LTV Error commands
+    {2023, "ltv_errors.error_procedures.0.needs_resolved", "bool"},
+    {2024, "ltv_errors.error_procedures.1.needs_resolved", "bool"},
+    {2025, "ltv_errors.error_procedures.2.needs_resolved", "bool"},
+    {2026, "ltv_errors.error_procedures.3.needs_resolved", "bool"},
+    {2027, "ltv_errors.error_procedures.4.needs_resolved", "bool"},
+    {2028, "ltv_errors.error_procedures.5.needs_resolved", "bool"},
+    {2029, "ltv_errors.error_procedures.6.needs_resolved", "bool"},
+    {2030, "ltv_errors.error_procedures.7.needs_resolved", "bool"},
 
     
     // Ping LTV command
