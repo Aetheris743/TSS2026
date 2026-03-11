@@ -181,21 +181,29 @@ async function updateServerData(path, value) {
 
 // EVENT LISTENERS
 
-function setupEventListeners() {
+async function setupEventListeners() {
   
-  // When any of the switch values are toggled, send the new value to the server
   const switches = document.querySelectorAll(
     'input[type="checkbox"][data-path]'
   );
 
-  switches.forEach((switchEl) => {
+  for (const switchEl of switches) {
+    const path = switchEl.getAttribute("data-path");
+
+    // Load initial value from server
+    try {
+      const value = await getServerData(path);
+      switchEl.checked = value;
+    } catch (err) {
+      console.error("Failed to load value for", path, err);
+    }
+
+    // Listen for changes
     switchEl.addEventListener("change", (event) => {
-      const path = event.target.getAttribute("data-path");
       const value = event.target.checked;
       updateServerData(path, value);
     });
-  });
-
+  }
   // When any of the buttons with data-path are clicked, send the value to the server
   const buttons = document.querySelectorAll("button[data-path]");
 

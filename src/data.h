@@ -40,6 +40,10 @@ void handle_udp_get_request(unsigned int command, unsigned char* data, struct ba
 bool handle_udp_post_request(unsigned int command, unsigned char* data, struct backend_data_t* backend);
 
 // Data management
+bool initialize_json_switch_states(void);
+bool initialize_ROVER_json_switch_states(void);
+bool initialize_EVA_json_switch_states(void);
+bool initialize_LTV_ERRORS_json_switch_states(void);
 void update_json_file(const char* filename, const char* section, const char* field_path, char* new_value);
 void sync_simulation_to_json(struct backend_data_t* backend);
 cJSON* get_json_file(const char* filename);

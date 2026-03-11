@@ -26,6 +26,11 @@ struct backend_data_t *init_backend() {
     struct backend_data_t *backend = malloc(sizeof(struct backend_data_t));
     memset(backend, 0, sizeof(struct backend_data_t));
 
+    //initialize the JSON files
+    if (!initialize_json_switch_states()) {
+        printf("Warning: Failed to initialize JSON files\n");
+    }
+
     // Set initial timing information
     backend->start_time = time(NULL);
     backend->server_up_time = 0;
@@ -62,6 +67,330 @@ struct backend_data_t *init_backend() {
     printf("Backend and simulation engine initialized successfully\n");
 
     return backend;
+}
+
+/** 
+* Initializes all the JSON switch states
+* @return true if initialization was successful, false otherwise
+*/
+bool initialize_json_switch_states() {
+    bool rover_init = initialize_ROVER_json_switch_states();
+    bool eva_init = initialize_EVA_json_switch_states();
+    bool ltv_errors_init = initialize_LTV_ERRORS_json_switch_states();
+
+    return rover_init && eva_init && ltv_errors_init;
+}
+
+
+
+/** 
+* Initializes JSON switch states in ROVER.json file
+* @return true if initialization was successful, false otherwise
+*/
+bool initialize_ROVER_json_switch_states() {
+    //make all Rover switch states false by default
+    cJSON* rover_json = get_json_file("ROVER");
+    if (!rover_json) {
+        printf("Error: Failed to load ROVER config file in initialize_json_switch_states\n");
+        return false;
+    }
+
+    //get pr telemetry from Rover JSON file
+    cJSON* pr_telemetry = cJSON_GetObjectItem(rover_json, "pr_telemetry");
+    if (!pr_telemetry) {
+        printf("Error: Failed to get pr_telemetry from ROVER config file in initialize_json_switch_states\n");
+        cJSON_Delete(rover_json);
+        return false;
+    }
+
+    //change cabin heating to false
+    cJSON_ReplaceItemInObject(pr_telemetry, "cabin_heating", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(pr_telemetry, "cabin_heating")) {
+        printf("Error: Failed to set cabin_heating in ROVER config file in initialize_json_switch_states\n");
+        cJSON_Delete(rover_json);
+        return false;
+    }
+
+    //change cabin cooling to false
+    cJSON_ReplaceItemInObject(pr_telemetry, "cabin_cooling", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(pr_telemetry, "cabin_cooling")) {
+        printf("Error: Failed to set cabin_cooling in ROVER config file in initialize_json_switch_states\n");
+        cJSON_Delete(rover_json);
+        return false;
+    }
+
+    //change headlights on to false
+    cJSON_ReplaceItemInObject(pr_telemetry, "lights_on", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(pr_telemetry, "lights_on")) {
+        printf("Error: Failed to set lights_on in ROVER config file in initialize_json_switch_states\n");
+        cJSON_Delete(rover_json);
+        return false;
+    }
+
+    //write to JSON file
+    char *json_string = cJSON_Print(rover_json);
+
+    FILE *file = fopen("data/ROVER.json", "w");
+    if (!file) {
+        printf("Error opening ROVER.json for writing\n");
+        free(json_string);
+        cJSON_Delete(rover_json);
+        return false;
+    }
+
+    fprintf(file, "%s", json_string);
+    fclose(file);
+
+    free(json_string);
+    cJSON_Delete(rover_json);
+
+    return true;
+
+}
+
+/** 
+* Initializes JSON switch states in EVA.json file
+* @return true if initialization was successful, false otherwise
+*/
+bool initialize_EVA_json_switch_states() {
+    cJSON* eva_json = get_json_file("EVA");
+    if (!eva_json) {
+        printf("Error: Failed to load EVA config file in initialize_json_switch_states\n");
+        return false;
+    }
+
+    ///////////////set all UIA values to false///////////////
+    cJSON* uia = cJSON_GetObjectItem(eva_json, "uia");
+    if (!uia) {
+        printf("Error: Failed to get uia from EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change eva1_power to false
+    cJSON_ReplaceItemInObject(uia, "eva1_power", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "eva1_power")) {
+        printf("Error: Failed to set eva1_power in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change eva1_oxy to false
+    cJSON_ReplaceItemInObject(uia, "eva1_oxy", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "eva1_oxy")) {
+        printf("Error: Failed to set eva1_oxy in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change eva1_water_supply to false
+    cJSON_ReplaceItemInObject(uia, "eva1_water_supply", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "eva1_water_supply")) {
+        printf("Error: Failed to set eva1_water_supply in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change eva1_water_waste to false
+    cJSON_ReplaceItemInObject(uia, "eva1_water_waste", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "eva1_water_waste")) {
+        printf("Error: Failed to set eva1_water_waste in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change eva2_power to false
+    cJSON_ReplaceItemInObject(uia, "eva2_power", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "eva2_power")) {
+        printf("Error: Failed to set eva2_power in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change eva2_oxy to false
+    cJSON_ReplaceItemInObject(uia, "eva2_oxy", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "eva2_oxy")) {
+        printf("Error: Failed to set eva2_oxy in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change eva2_water_supply to false
+    cJSON_ReplaceItemInObject(uia, "eva2_water_supply", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "eva2_water_supply")) {
+        printf("Error: Failed to set eva2_water_supply in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change eva2_water_waste to false
+    cJSON_ReplaceItemInObject(uia, "eva2_water_waste", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "eva2_water_waste")) {
+        printf("Error: Failed to set eva2_water_waste in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change o2 vent to false
+    cJSON_ReplaceItemInObject(uia, "oxy_vent", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "oxy_vent")) {
+        printf("Error: Failed to set oxy_vent in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change depress to false
+    cJSON_ReplaceItemInObject(uia, "depress", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(uia, "depress")) {
+        printf("Error: Failed to set depress in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    ///////////////set all DCU values to false///////////////
+    cJSON* dcu = cJSON_GetObjectItem(eva_json, "dcu");
+    if (!dcu) {
+        printf("Error: Failed to get dcu from EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //get eva1 object from dcu
+    cJSON* eva1_dcu = cJSON_GetObjectItem(dcu, "eva1");
+    if (!eva1_dcu) {
+        printf("Error: Failed to get eva1 from dcu in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change oxy to false
+    cJSON_ReplaceItemInObject(eva1_dcu, "oxy", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(eva1_dcu, "oxy")) {
+        printf("Error: Failed to set eva1.oxy in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change fan to false
+    cJSON_ReplaceItemInObject(eva1_dcu, "fan", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(eva1_dcu, "fan")) {
+        printf("Error: Failed to set eva1.fan in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change pump to false
+    cJSON_ReplaceItemInObject(eva1_dcu, "pump", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(eva1_dcu, "pump")) {
+        printf("Error: Failed to set eva1.pump in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change co2 to false
+    cJSON_ReplaceItemInObject(eva1_dcu, "co2", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(eva1_dcu, "co2")) {
+        printf("Error: Failed to set eva1.co2 in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //get batt object from eva1_dcu
+    cJSON* batt_dcu = cJSON_GetObjectItem(eva1_dcu, "batt");
+    if (!batt_dcu) {
+        printf("Error: Failed to get batt from eva1 in dcu in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change lu to false
+    cJSON_ReplaceItemInObject(batt_dcu, "lu", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(batt_dcu, "lu")) {
+        printf("Error: Failed to set eva1.batt.lu in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    //change ps to false
+    cJSON_ReplaceItemInObject(batt_dcu, "ps", cJSON_CreateBool(0));
+    if (!cJSON_GetObjectItem(batt_dcu, "ps")) {
+        printf("Error: Failed to set eva1.batt.ps in EVA config file in initialize_json_switch_states\n");
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+
+    //write to JSON file
+    char *json_string = cJSON_Print(eva_json);
+
+    FILE *file = fopen("data/EVA.json", "w");
+    if (!file) {
+        printf("Error opening EVA.json for writing\n");
+        free(json_string);
+        cJSON_Delete(eva_json);
+        return false;
+    }
+
+    fprintf(file, "%s", json_string);
+    fclose(file);
+
+    free(json_string);
+    cJSON_Delete(eva_json);
+
+    return true;
+}
+
+/**
+* Initializes JSON error states in LTV_ERRORS.json file
+* Sets all needs_resolved fields to true
+* @return true if initialization was successful, false otherwise
+*/
+bool initialize_LTV_ERRORS_json_switch_states() {
+    cJSON* errors_json = get_json_file("LTV_ERRORS");
+    if (!errors_json) {
+        printf("Error: Failed to load LTV_ERRORS config file in initialize_LTV_ERRORS_json_switch_states\n");
+        return false;
+    }
+
+    ///////////////get error_procedures array///////////////
+    cJSON* error_procedures = cJSON_GetObjectItem(errors_json, "error_procedures");
+    if (!error_procedures || !cJSON_IsArray(error_procedures)) {
+        printf("Error: Failed to get error_procedures array from LTV_ERRORS config file\n");
+        cJSON_Delete(errors_json);
+        return false;
+    }
+
+    ///////////////set all needs_resolved values to true///////////////
+    cJSON* error = NULL;
+    cJSON_ArrayForEach(error, error_procedures) {
+
+        cJSON_ReplaceItemInObject(error, "needs_resolved", cJSON_CreateBool(1));
+
+        if (!cJSON_GetObjectItem(error, "needs_resolved")) {
+            printf("Error: Failed to set needs_resolved in LTV_ERRORS config file\n");
+            cJSON_Delete(errors_json);
+            return false;
+        }
+    }
+
+    ///////////////write to JSON file///////////////
+    char *json_string = cJSON_Print(errors_json);
+
+    FILE *file = fopen("data/LTV_ERRORS.json", "w");
+    if (!file) {
+        printf("Error opening LTV_ERRORS.json for writing\n");
+        free(json_string);
+        cJSON_Delete(errors_json);
+        return false;
+    }
+
+    fprintf(file, "%s", json_string);
+    fclose(file);
+
+    free(json_string);
+    cJSON_Delete(errors_json);
+
+    return true;
 }
 
 /**
