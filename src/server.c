@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
                 handle_udp_get_request(command, (unsigned char *)json_data, backend);
 
                 size_t json_len = strlen(json_data);
-                buffer_size = 8 + json_len + 1;  // header + JSON + null terminator
+                buffer_size = json_len;
                 response_buffer = malloc(buffer_size);
                 if (!response_buffer) {
                     fprintf(stderr, "Failed to allocate memory for GET response\n");
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 // Prepare response packet with JSON data content
-                memcpy(response_buffer + 8, json_data, json_len + 1);
+                memcpy(response_buffer, json_data, json_len);
 
                 // Send response
                 int bytes_sent =
@@ -188,7 +188,11 @@ int main(int argc, char *argv[]) {
                 drop_udp_client(&udp_clients, client);
             } else if (command < 3000) {  // POST requests, primarily the TSS peripherals and DUST simulator (1000-2999)
                 bool result = handle_udp_post_request(command, (unsigned char *)data, backend);
-
+                
+                //send false if pinged too early
+                if(command == 2050 && backend->time_since_last_ping <20) {
+                    result = 0;
+                }
                 // Send status of POST request back to client with just boolean response flag
                 unsigned char response_buffer[4];
                 unsigned int status = result ? 1 : 0;
@@ -430,6 +434,7 @@ static void tss_to_unreal(SOCKET socket, struct sockaddr_in address, socklen_t l
     float steering = (float)get_field_from_json("ROVER", "pr_telemetry.steering", 0.0);
     float throttle = (float)get_field_from_json("ROVER", "pr_telemetry.throttle", 0.0);
     int ping = (int)get_field_from_json("LTV", "signal.ping_requested", 0.0);
+    int ping_unlimited = (int)get_field_from_json("LTV", "signal.ping_unlimited_requested", 0.0);
 
     unsigned int time = backend->server_up_time;
     unsigned char buffer[12];
@@ -479,18 +484,43 @@ static void tss_to_unreal(SOCKET socket, struct sockaddr_in address, socklen_t l
     memcpy(buffer + 8, &throttle, 4);
     sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&address, len);
 
-    // Send ping to DUST only if it is true, then reset it and decrement pings left
+    // Send ping to DUST only if it is true and time since last ping is at least 20 seconds
+    static int timeOfLastPing = -21;
+    backend->time_since_last_ping = backend->server_up_time - timeOfLastPing;
     if (ping == true) {
+        backend->time_since_last_ping = backend->server_up_time - timeOfLastPing;
+        if (backend->time_since_last_ping >= 20) {
+            // Send ping command
+            command = TSS_TO_UNREAL_PING_COMMAND;
+
+            if (!big_endian())
+                reverse_bytes((unsigned char *)&command);
+
+            memcpy(buffer, &time, 4);
+            memcpy(buffer + 4, &command, 4);
+            memcpy(buffer + 8, &ping, 4);
+            sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&address, len);
+            printf("Ping requested, sending Unreal ping command\n");
+            timeOfLastPing = backend->server_up_time;
+
+        } else {
+            printf("Ping requested, TOO EARLY to send Unreal ping command\n");
+        }
+
+        update_json_file("LTV", "signal", "ping_requested", "0");
+    }
+
+    if (ping_unlimited == true) {
         // Send ping command
         command = TSS_TO_UNREAL_PING_COMMAND;
         if (!big_endian())
             reverse_bytes((unsigned char *)&command);
         memcpy(buffer, &time, 4);
         memcpy(buffer + 4, &command, 4);
-        memcpy(buffer + 8, &ping, 4);
+        memcpy(buffer + 8, &ping_unlimited, 4);
         sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&address, len);
 
         printf("Ping requested, sending Unreal ping command\n");
-        update_json_file("LTV", "signal", "ping_requested", "0");
+        update_json_file("LTV", "signal", "ping_unlimited_requested", "0");
     }
 }

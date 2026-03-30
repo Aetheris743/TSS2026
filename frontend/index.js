@@ -33,34 +33,38 @@ function onload() {
  * Note: this is a bit of a hodgepodge to mantain backwards compatibility with the old system e.g. timers, boolean switches, etc
  */
 async function fetchData() {
-  let evaData, roverData, ltvData;
+  let evaData, roverData, ltvData, ltvErrorsData;
 
   try {
     // Create abort controllers with 1 second timeout
     const evaController = new AbortController();
     const roverController = new AbortController();
     const ltvController = new AbortController();
+    const ltvErrorsController = new AbortController();
 
     const timeoutIds = [
       setTimeout(() => evaController.abort(), 2000),
       setTimeout(() => roverController.abort(), 2000),
       setTimeout(() => ltvController.abort(), 2000),
+      setTimeout(() => ltvErrorsController.abort(), 2000),
     ];
 
     // Fetch EVA, ROVER, and LTV data simultaneously
-    const [evaResponse, roverResponse, ltvResponse] = await Promise.all([
+    const [evaResponse, roverResponse, ltvResponse, ltvErrorsResponse] = await Promise.all([
       fetch(`/data/EVA.json`, { signal: evaController.signal }),
       fetch(`/data/ROVER.json`, { signal: roverController.signal }),
       fetch(`/data/LTV.json`, { signal: ltvController.signal }),
+      fetch(`/data/LTV_ERRORS.json`, { signal: ltvErrorsController.signal }),
     ]);
 
     // Clear timeouts on successful response
     timeoutIds.forEach((id) => clearTimeout(id));
 
-    [evaData, roverData, ltvData] = await Promise.all([
+    [evaData, roverData, ltvData, ltvErrorsData] = await Promise.all([
       evaResponse.json(),
       roverResponse.json(),
       ltvResponse.json(),
+      ltvErrorsResponse.json(),
     ]);
 
     //check if telemetry component has been started by seeing if EVA.status.started is true
@@ -93,6 +97,10 @@ async function fetchData() {
 
     if (path.startsWith("ltv.")) {
       value = getNestedValue(ltvData, path.slice(4));
+    }
+
+    if (path.startsWith("ltv_errors.")) {
+      value = getNestedValue(ltvErrorsData, path.slice(11));
     }
 
     // Special handling for signal strength
@@ -173,20 +181,29 @@ async function updateServerData(path, value) {
 
 // EVENT LISTENERS
 
-function setupEventListeners() {
-  // When any of the switch values are toggled, send the new value to the server
+async function setupEventListeners() {
+  
   const switches = document.querySelectorAll(
     'input[type="checkbox"][data-path]'
   );
 
-  switches.forEach((switchEl) => {
+  for (const switchEl of switches) {
+    const path = switchEl.getAttribute("data-path");
+
+    // Load initial value from server
+    try {
+      const value = await getServerData(path);
+      switchEl.checked = value;
+    } catch (err) {
+      console.error("Failed to load value for", path, err);
+    }
+
+    // Listen for changes
     switchEl.addEventListener("change", (event) => {
-      const path = event.target.getAttribute("data-path");
       const value = event.target.checked;
       updateServerData(path, value);
     });
-  });
-
+  }
   // When any of the buttons with data-path are clicked, send the value to the server
   const buttons = document.querySelectorAll("button[data-path]");
 
@@ -195,10 +212,27 @@ function setupEventListeners() {
       const path = event.target.getAttribute("data-path");
       const action = event.target.getAttribute("data-action");
 
+
+    // Only apply 5-second cooldown to limited ping button
+    if (event.target.classList.contains("btn-ping")) {
+      const now = Date.now();
+      if (!window.lastPingTime) window.lastPingTime = 0;
+      if (now - window.lastPingTime < 20000) {
+        console.log("Ping ignored: 20-second cooldown");
+        event.preventDefault();
+        return; // stop here if still in cooldown
+      }
+
+      window.lastPingTime = now;
+      event.target.disabled = true;
+      setTimeout(() => { event.target.disabled = false; }, 5000);
+    }
+
+
       // For action buttons, directly update the status field
       if (action === "start") {
         // Special handler to only allow pinging when the DUST sim is connected, @TODO see if this can be generalized later
-        if (path === "ltv.signal.ping_requested") {
+        if (path === "ltv.signal.ping_requested" || path === "ltv.signal.ping_unlimited_requested") {
           if (!dustConnected) {
             alert(
               "DUST simulator is not connected. Please refer to TSS documentation for learning how to connect to the simulator."

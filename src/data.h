@@ -20,6 +20,7 @@ struct backend_data_t {
     // Timing information
     uint32_t start_time;
     uint32_t server_up_time;
+    uint32_t time_since_last_ping;
 
     // DUST rover simulation
     int running_pr_sim;
@@ -39,10 +40,15 @@ void handle_udp_get_request(unsigned int command, unsigned char* data, struct ba
 bool handle_udp_post_request(unsigned int command, unsigned char* data, struct backend_data_t* backend);
 
 // Data management
+bool initialize_json_switch_states(void);
+bool initialize_ROVER_json_switch_states(void);
+bool initialize_EVA_json_switch_states(void);
+bool initialize_LTV_ERRORS_json_switch_states(void);
 void update_json_file(const char* filename, const char* section, const char* field_path, char* new_value);
 void sync_simulation_to_json(struct backend_data_t* backend);
 cJSON* get_json_file(const char* filename);
 void send_json_file(const char* filename, unsigned char* data);
+void send_recovery_mode_json_file(const char* filename, unsigned char* data);
 void update_eva_station_timing(void);
 void reset_eva_station_timing(void);
 void update_sim_DCU_field_settings(sim_engine_t* sim_engine);
@@ -51,8 +57,14 @@ void update_EVA_error_simulation_error_states(sim_engine_t* sim_engine);
 void update_O2_error_state(sim_engine_t* sim_engine);
 void update_fan_error_state(sim_engine_t* sim_engine);
 void update_power_error_state(sim_engine_t* sim_engine);
-void update_scrubber_state(sim_engine_t* sim_engine);
-void update_remaining_errors(sim_engine_t* engine);
+void update_scrubber_state_EVA(sim_engine_t* sim_engine);
+void update_num_remaining_errors_LTV(sim_engine_t* engine);
+
+//UIA related functions
+void update_sim_UIA_field_settings(sim_engine_t* sim_engine);
+bool update_sim_UIA_connected(sim_engine_t* sim_engine);
+void update_sim_active_states(sim_engine_t* sim_engine);
+void initialize_UIA_override_dependent_values(sim_engine_t* sim_engine);
 
 // Helper functions
 void reverse_bytes(unsigned char* bytes);
@@ -68,7 +80,7 @@ float extract_float_value(unsigned char* data);
 // NOTE: see server.h for command definitions to send to DUST Unreal Engine simulation
 // NOTE: most of these commands have been reused from the TSS 2025 project to help support backwards compatibility. In the future, it may be reccomended to standardize these.
 static const udp_command_mapping_t udp_command_mappings[] = {
-    // ROVER commands (sent from the DUST Unreal Engine simulation over UDP)
+    // ROVER commands (sent to/from the DUST Unreal Engine simulation over UDP)
     {1103, "rover.pr_telemetry.cabin_heating", "bool"},
     {1104, "rover.pr_telemetry.cabin_cooling", "bool"},
     {1105, "rover.pr_telemetry.co2_scrubber", "bool"},
@@ -120,17 +132,18 @@ static const udp_command_mapping_t udp_command_mappings[] = {
     {2022, "eva.imu.eva2.heading", "float"},
 
     //LTV command
-    {2023, "ltv.errors.recovery_mode", "bool"},
-    {2024, "ltv.errors.dust_sensor", "bool"},
-    {2025, "ltv.errors.comms.power_distribution" , "bool"},
-    {2026, "ltv.errors.comms.nav_system", "bool"},
-    {2027, "ltv.errors.comms.electronic_heater", "bool"},
+    {2023, "ltv_errors.error_procedures.4.needs_resolved", "bool"},
+    {2024, "ltv_errors.error_procedures.5.needs_resolved", "bool"},
+    {2025, "ltv_errors.error_procedures.6.needs_resolved", "bool"},
+    {2026, "ltv.errors.nav_system", "bool"},
+    {2027, "ltv.errors.electronic_heater", "bool"},
     {2028, "ltv.errors.comms", "bool"},
     {2029, "ltv.errors.fuse", "bool"},
 
     
     // Ping LTV command
     {2050, "ltv.signal.ping_requested", "bool"},
+    {2051, "ltv.signal.ping_unlimited_requested", "bool"},
 
     {0, NULL, NULL} // Sentinel
 };

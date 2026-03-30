@@ -141,7 +141,8 @@ During the challenge, you will be expected to issue commands to control the rove
 | Keyboard Shortcut | Description                                          |
 | ----------------- | ---------------------------------------------------- |
 | Ctrl + R | Reset the rover's position back to the starting position |
-| Ctrl + G | Debug mode, use the up and down arrow keys to control throttle, left and right to control steering
+| Ctrl + G | Debug mode, use the up and down arrow keys to control throttle, left and right to control steering |
+| P | Settings, can be used to see ray of light indicators of last known good position of LTV and position of LTV for testing. Ray of light indicators will not be available for demonstration at JSC |
 
 ## Development
 
@@ -170,6 +171,7 @@ These are the commands you can send to the server to fetch the telemetry data as
 | 0              | [ROVER.json](/data/ROVER.json) |
 | 1              | [EVA.json](/data/EVA.json)     |
 | 2              | [LTV.json](/data/LTV.json)     |
+| 3              | [LTV_ERRORS.json](data/LTV_ERRORS.json) |
 
 When fetching data, we recommend doing so in one second intervals. Telemetry data is calculated and updated in one second increments, so increasing the request rate in your programs will not make any difference.
 
@@ -199,7 +201,6 @@ In addition, the below commands can be used to turn on the headlights and trigge
 | -------------- | -------- | -------------------------- |
 | 1103           | Cabin Heating | float: 0.0 or 1.0              |
 | 1104           | Cabin Cooling | float: 0.0 or 1.0              |
-| 1105           | CO2 Scrubber | float: 0.0 or 1.0             |
 | 1106           | Headlights | float: 0.0 or 1.0           |
 
 Here is an example UDP packet to increase the rover to half throttle (50.0).
@@ -215,11 +216,12 @@ Response packet: 01000000 (true)
 
 ### LTV Pinging
 
-As the mission description outlines, the teams selected for the PR segment of the challenge will be attempting to find a missing lunar terrain vehicle (LTV) based on a last known location and beacon signal. Within the DUST simulator, the LTV's location will be randomized every time you restart the application, based a uniform distance from the last known location defined in TSS. After arriving at the last known location, the team will then execute a search procedure while using the beacon to narrow in on the LTV's actual location. To issue a new ping, you will send a UDP packet to TSS in the same format as previous examples:
+As the mission description outlines, the teams selected for the PR segment of the challenge will be attempting to find a missing lunar terrain vehicle (LTV) based on a last known location and beacon signal. Within the DUST simulator, the LTV's location will be randomized every time you restart the application, based a uniform distance from the last known location defined in TSS. After arriving at the last known location, the team will then execute a search procedure while using the beacon to narrow in on the LTV's actual location. Pings will only be allowed once every 20 seconds, but an unlimited pings command is inclulded in the current version of the TSS that you can use for testing before arriving at JSC. To issue a new ping, you will send a UDP packet to TSS in the same format as previous examples:
 
 | Command number | Command  | Data input                 |
 | -------------- | -------- | -------------------------- |
 | 2050          | LTV Ping | float: 1.0            |
+| 2051          | LTV Ping (unlimited) | float: 1.0 |
 
 Instead of recieving a packet back with the signal strength, you can fetch the updated value from the LTV.json file via a UDP command (see example <a href="#udp-socket-communication">here</a>). For testing purposes, this can also be executed directly from within the TSS interface by pressing the "PING" button in the LTV Control section.
 
