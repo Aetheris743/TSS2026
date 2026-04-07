@@ -166,7 +166,8 @@ int main(int argc, char *argv[]) {
 
                 // Convert from big-endian if on little-endian system
                 if (!big_endian()) {
-                    for (int i = 0; i < LIDAR_NUM_POINTS; i++) {
+                    // we already reversed the first set of bytes above, so start at 1
+                    for (int i = 1; i < LIDAR_NUM_POINTS; i++) {
                         reverse_bytes((unsigned char *)&lidar_data[i]);
                     }
                 }
