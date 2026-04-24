@@ -984,13 +984,13 @@ void update_ltv_error_dependencies() {
     static bool poor_resolved_previous = 0;
     static bool reboot_resolved_previous = 1;
 
-    if ((poor_resolved || reboot_resolved) && (poor_resolved_previous!=poor_resolved || reboot_resolved_previous!=reboot_resolved)) {
+    if ((poor_resolved && poor_resolved_previous!=poor_resolved) || (reboot_resolved && reboot_resolved_previous!=reboot_resolved)) {
         // Turn ON subsystem power bus error (needs_resolved = true)
         cJSON_ReplaceItemInObject(subsystem_bus, "needs_resolved", cJSON_CreateBool(1));
         printf("Subsystem Power Bus Error triggered due to dependencies\n");
     }
 
-    if ((!poor_resolved || !reboot_resolved) && (poor_resolved_previous!=poor_resolved || reboot_resolved_previous!=reboot_resolved)) {
+    if ((!poor_resolved && poor_resolved_previous!=poor_resolved) || (!reboot_resolved && reboot_resolved_previous!=reboot_resolved)) {
         // Turn ON subsystem power bus error (needs_resolved = true)
         cJSON_ReplaceItemInObject(subsystem_bus, "needs_resolved", cJSON_CreateBool(0));
         printf("Subsystem Power Bus Error untriggered due to dependencies\n");
