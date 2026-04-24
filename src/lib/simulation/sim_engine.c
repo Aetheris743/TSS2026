@@ -633,6 +633,16 @@ void sim_engine_reset_component(sim_engine_t* engine, const char* component_name
         field->current_value.f = field->start_value.f; // Reset to starting value
     }
 
+    //send reset command to LTV
+    if (engine->ltv_reset) {
+        engine->ltv_reset(engine->ltv_ctx);
+    }
+
+    //also reset errors on our end just in case LTV isn't connected
+    if (engine->reset_errors) {
+        engine->reset_errors(engine->reset_ctx);
+    }
+
     printf("Reset component '%s' simulation\n", component_name);
 }
 

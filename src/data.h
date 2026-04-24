@@ -51,6 +51,7 @@ void send_json_file(const char* filename, unsigned char* data);
 void send_recovery_mode_json_file(const char* filename, unsigned char* data);
 void update_eva_station_timing(void);
 void reset_eva_station_timing(void);
+void backend_reset_errors(void* ctx);
 void update_sim_DCU_field_settings(sim_engine_t* sim_engine);
 void update_error_states(sim_engine_t* sim_engine);
 void update_EVA_error_simulation_error_states(sim_engine_t* sim_engine);
@@ -59,6 +60,7 @@ void update_fan_error_state(sim_engine_t* sim_engine);
 void update_power_error_state(sim_engine_t* sim_engine);
 void update_scrubber_state_EVA(sim_engine_t* sim_engine);
 void update_num_remaining_errors_LTV(sim_engine_t* engine);
+void update_ltv_error_dependencies();
 
 //UIA related functions
 void update_sim_UIA_field_settings(sim_engine_t* sim_engine);

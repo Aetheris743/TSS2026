@@ -9,6 +9,9 @@ static void get_contents(char *buffer, unsigned int *time, unsigned int *command
                          unsigned char *data, int packet_size);
 static void tss_to_unreal(SOCKET socket, struct sockaddr_in address, socklen_t len,
                           struct backend_data_t *backend);
+void tss_to_ltv(SOCKET socket, struct sockaddr_in address, socklen_t len,
+                          struct backend_data_t *backend);
+void server_send_ltv_reset(void* ctx);
 
 int main(int argc, char *argv[]) {
 
@@ -54,6 +57,9 @@ int main(int argc, char *argv[]) {
 
     struct sockaddr_in unreal_addr;
     socklen_t unreal_addr_len;
+    struct sockaddr_in ltv_addr;
+    struct sockaddr_in *ltv_addr_ptr;
+    socklen_t ltv_addr_len;
     bool unreal = false;
     double last_dust_message_time = 0.0;
 
@@ -66,6 +72,17 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to initialize backend\n");
         return -1;
     }
+
+    server_context_t server_ctx;
+    server_ctx.udp_socket = udp_socket;
+    server_ctx.ltv_addr_len = 0;
+    server_ctx.backend = backend;
+
+    backend->sim_engine->ltv_reset = server_send_ltv_reset;
+    backend->sim_engine->ltv_ctx = &server_ctx;
+
+    backend->sim_engine->reset_errors = backend_reset_errors;
+    backend->sim_engine->reset_ctx = backend;
 
     // Initialize client connection list
     struct client_info_t *clients = NULL;
@@ -210,6 +227,16 @@ int main(int argc, char *argv[]) {
                 unreal_addr_len = client->address_length;
                 unreal = true;
                 last_dust_message_time = get_wall_clock(&profile_context);
+
+                drop_udp_client(&udp_clients, client);
+            } else if (command == 4000) {  // LTV Task Board registration
+                server_ctx.ltv_addr = client->udp_addr;
+                server_ctx.ltv_addr.sin_port = htons(14141);
+                
+                server_ctx.ltv_addr_len = client->address_length;
+                printf("LTV Address updated to: %s:%d\n", 
+                        inet_ntoa(server_ctx.ltv_addr.sin_addr), 
+                        ntohs(server_ctx.ltv_addr.sin_port));
 
                 drop_udp_client(&udp_clients, client);
             } else {  // Unknown command
@@ -418,6 +445,33 @@ static void get_contents(char *buffer, unsigned int *time, unsigned int *command
     }
 }
 
+void server_send_ltv_reset(void* ctx) {
+    server_context_t* s = (server_context_t*)ctx;
+
+    tss_to_ltv(
+        s->udp_socket,
+        s->ltv_addr,
+        s->ltv_addr_len,
+        s->backend
+    );
+
+    printf("sent ltv reset.\n");
+
+    printf("=== LTV CONTEXT DEBUG ===\n");
+
+printf("udp_socket: %d\n", s->udp_socket);
+
+printf("ltv_addr_len: %d\n", s->ltv_addr_len);
+
+printf("ltv_addr.sin_family: %d\n", s->ltv_addr.sin_family);
+
+printf("ltv_addr.sin_port (raw): %d\n", ntohs(s->ltv_addr.sin_port));
+
+printf("ltv_addr.sin_addr (raw): %s\n", inet_ntoa(s->ltv_addr.sin_addr));
+
+printf("=========================\n");
+}
+
 /**
  * Sends telemetry data to Unreal Engine via UDP packets.
  * Transmits rover state (brakes, lights, steering, throttle, switch) as separate packets.
@@ -524,4 +578,36 @@ static void tss_to_unreal(SOCKET socket, struct sockaddr_in address, socklen_t l
         printf("Ping requested, sending Unreal ping command\n");
         update_json_file("LTV", "signal", "ping_unlimited_requested", "0");
     }
+}
+
+/**
+ * Sends reset message to LTV Task Board via a UDP Message
+ * 
+ * @param socket UDP socket for transmission
+ * @param address Unreal Engine's network address
+ * @param len Length of address structure
+ * @param backend Backend data containing rover state
+ */
+void tss_to_ltv(SOCKET socket, struct sockaddr_in address, socklen_t len,
+                          struct backend_data_t *backend) {
+    
+    unsigned char buffer[12] = {0};
+    unsigned int time = backend->server_up_time;
+
+    // Send reset command
+    unsigned int command = TSS_TO_LTV_RESET_COMMAND;
+
+    // Convert values to Network Byte Order (Big-Endian)
+    unsigned int time_be = htonl(backend->server_up_time);
+    unsigned int command_be = htonl(TSS_TO_LTV_RESET_COMMAND);
+    unsigned int zero = 0;
+
+    memcpy(buffer, &time_be, 4);
+    memcpy(buffer + 4, &command_be, 4);
+    memcpy(buffer + 8, &zero, 4);
+    sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&address, len);
+
+    printf("Address: %s:%d\n",
+       inet_ntoa(address.sin_addr),
+       ntohs(address.sin_port));
 }
