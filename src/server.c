@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
                 int buffer_size = 0;
 
                 // Allocate buffer for JSON response (8 bytes header + JSON data)
-                char json_data[4096] = {0};  // Buffer for JSON content
+                char json_data[20000] = {0};  // Buffer for JSON content
                 handle_udp_get_request(command, (unsigned char *)json_data, backend);
 
                 size_t json_len = strlen(json_data);
