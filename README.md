@@ -173,7 +173,7 @@ These are the commands you can send to the server to fetch the telemetry data as
 | 2              | [LTV.json](/data/LTV.json)     |
 | 3              | [LTV_ERRORS.json](data/LTV_ERRORS.json) |
 
-<mark>NOTE on the LTV_ERRORS.json file: you will not be able to access any error codes nor procedures beaides the Recovery Mode error code and procedures until the Recovery Mode error is resolved. Once the Recovery Mode error is resolved, you can see the Recovery Mode error code and procedures as well as other error codes and procedures. Be sure to keep polling for errors as other error codes and procedures may arise once others are resolved.</mark>
+<mark>NOTE on the LTV_ERRORS.json file: you will not be able to access any error codes nor procedures besides the Recovery Mode error code and procedures until the Recovery Mode error is resolved. Once the Recovery Mode error is resolved, you can see the Recovery Mode error code and procedures as well as other error codes and procedures. Be sure to keep polling for errors as other error codes and procedures may arise once others are resolved.</mark>
 
 When fetching data, we recommend doing so in one second intervals. Telemetry data is calculated and updated in one second increments, so increasing the request rate in your programs will not make any difference.
 
