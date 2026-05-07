@@ -506,6 +506,8 @@ void sim_engine_update(sim_engine_t* engine, float delta_time) {
             if(engine->num_task_board_errors == 0 && eva1->simulation_time == (engine->time_to_complete_task_board + engine->error_time)) {
                 throw_random_error(engine);
                 printf("Error thrown at simulation time: %.2f seconds\n", eva1->simulation_time);
+            } else if(eva1->simulation_time == (engine->time_to_complete_task_board + engine->error_time)) {
+                engine->time_to_complete_task_board = engine->time_to_complete_task_board+1;
             }
         } else {
             printf("Simulation tried to access non-existent component 'eva1'\n");

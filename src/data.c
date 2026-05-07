@@ -1938,8 +1938,8 @@ void backend_reset_errors(void* ctx) {
     update_json_file("LTV_ERRORS", "error_procedures", "3.needs_resolved", "true");
     update_json_file("LTV_ERRORS", "error_procedures", "4.needs_resolved", "false");
     update_json_file("LTV_ERRORS", "error_procedures", "5.needs_resolved", "false");
-    update_json_file("LTV_ERRORS", "error_procedures", "6.needs_resolved", "true");
-    update_json_file("LTV_ERRORS", "error_procedures", "7.needs_resolved", "true");
+    //update_json_file("LTV_ERRORS", "error_procedures", "6.needs_resolved", "true");
+    //update_json_file("LTV_ERRORS", "error_procedures", "7.needs_resolved", "true");
 
     printf("LTV errors reset via update_json_file\n");
 }
