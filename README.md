@@ -100,7 +100,7 @@ The umbilical interface assembly (UIA) is a component used at the beginning of a
 
 The display and control unit (DCU) used for this challenge is a component that allows the user to control various settings of their suit's operation during an EVA. For example, if scrubber A's CO2 storage fills up, you could flip a switch on the DCU to flush it while switching to scrubber B.
 
-<img src="documents/peripherals/dcu_front.jpg" style="height: 300px"/> <img src="documents/peripherals/dcu_top.jpg" style="height: 300px"/>
+<img src="documents/peripherals/dcu_front_new.jpg" style="height: 300px"/> <img src="documents/peripherals/dcu_top_new.jpg" style="height: 300px"/>
 
 | Sensor  | Value True | Value False     | Description                                                                                           |
 | ------- | ---------- | --------------- | ----------------------------------------------------------------------------------------------------- |
