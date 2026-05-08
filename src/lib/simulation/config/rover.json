@@ -146,13 +146,13 @@
     "cabin_temperature_target": {
       "type": "float",
       "algorithm": "dependent_value",
-      "formula": "external_temp * 0.25 + cabin_heating * 15.0 - cabin_cooling * 10.0 + 20.0",
+      "formula": "external_temp * 0.07 + cabin_heating * 10.0 - cabin_cooling * 10.0 + 25.0",
       "depends_on": ["external_temp", "cabin_heating", "cabin_cooling"]
     },
     "external_temp": {
       "type": "float",
       "algorithm": "dependent_value",
-      "formula": "-173.0 + sunlight * 3.0",
+      "formula": "-173.0 + sunlight * 0.03",
       "depends_on": ["sunlight"]
     },
     "coolant_storage": {
