@@ -176,8 +176,9 @@
     },
     "secondary_battery_level": {
       "type": "float",
-      "algorithm": "constant_value",
-      "value": 100.0
+      "algorithm": "linear_decay",
+      "start_value": 100.0,
+      "rate": 0.0
     },
     "rover_elapsed_time": {
       "type": "float",
