@@ -2,65 +2,65 @@
 	"telemetry":	{
 		"eva1":	{
 			"primary_battery_level":	100,
-			"secondary_battery_level":	99.699981689453125,
-			"oxy_pri_storage":	48.319988250732422,
-			"oxy_sec_storage":	47.659957885742188,
-			"oxy_pri_pressure":	1449.599609375,
-			"oxy_sec_pressure":	1429.7987060546875,
-			"suit_pressure_oxy":	0.29999998211860657,
+			"secondary_battery_level":	100,
+			"oxy_pri_storage":	100,
+			"oxy_sec_storage":	100,
+			"oxy_pri_pressure":	0,
+			"oxy_sec_pressure":	0,
+			"suit_pressure_oxy":	0,
 			"suit_pressure_co2":	0,
 			"suit_pressure_other":	0,
-			"suit_pressure_total":	0.29999998211860657,
+			"suit_pressure_total":	0,
 			"helmet_pressure_co2":	0,
 			"fan_pri_rpm":	0,
 			"fan_sec_rpm":	30000,
 			"scrubber_a_co2_storage":	0,
-			"scrubber_b_co2_storage":	5.2000026702880859,
-			"temperature":	24.393306732177734,
+			"scrubber_b_co2_storage":	0,
+			"temperature":	21.100000381469727,
 			"coolant_storage":	0,
 			"coolant_gas_pressure":	0,
 			"coolant_liquid_pressure":	500,
-			"heart_rate":	157.80963134765625,
-			"oxy_consumption":	0.15024769306182861,
-			"co2_production":	0.15024769306182861,
-			"eva_elapsed_time":	40
+			"heart_rate":	0,
+			"oxy_consumption":	0,
+			"co2_production":	0,
+			"eva_elapsed_time":	0
 		},
 		"eva2":	{
 			"battery_level":	100,
 			"oxy_pri_storage":	100,
 			"oxy_sec_storage":	100,
-			"oxy_pri_pressure":	1449.599609375,
-			"oxy_sec_pressure":	1429.7987060546875,
-			"suit_pressure_oxy":	4.03608798980713,
-			"suit_pressure_co2":	0.065207533538341522,
+			"oxy_pri_pressure":	0,
+			"oxy_sec_pressure":	0,
+			"suit_pressure_oxy":	4,
+			"suit_pressure_co2":	0.05000000074505806,
 			"suit_pressure_other":	0,
-			"suit_pressure_total":	0.29999998211860657,
+			"suit_pressure_total":	0,
 			"helmet_pressure_co2":	0,
 			"fan_pri_rpm":	0,
-			"fan_sec_rpm":	30000,
-			"scrubber_a_co2_storage":	33.501995086669922,
-			"scrubber_b_co2_storage":	33.501995086669922,
-			"temperature":	24.393306732177734,
-			"coolant_storage":	100,
+			"fan_sec_rpm":	0,
+			"scrubber_a_co2_storage":	30,
+			"scrubber_b_co2_storage":	30,
+			"temperature":	21.100000381469727,
+			"coolant_storage":	0,
 			"coolant_gas_pressure":	0,
 			"coolant_liquid_pressure":	500,
-			"heart_rate":	91.1855926513672,
-			"oxy_consumption":	0.15016011893749237,
-			"co2_production":	0.15016011893749237,
+			"heart_rate":	0,
+			"oxy_consumption":	0,
+			"co2_production":	0,
 			"eva_elapsed_time":	0
 		}
 	},
 	"status":	{
-		"started":	true
+		"started":	false
 	},
 	"dcu":	{
 		"eva1":	{
-			"oxy":	true,
+			"oxy":	false,
 			"fan":	false,
 			"pump":	false,
 			"co2":	false,
 			"batt":	{
-				"lu":	true,
+				"lu":	false,
 				"ps":	false
 			}
 		},
@@ -92,7 +92,7 @@
 		}
 	},
 	"uia":	{
-		"eva1_power":	true,
+		"eva1_power":	false,
 		"eva1_oxy":	false,
 		"eva1_water_supply":	false,
 		"eva1_water_waste":	false,
@@ -101,6 +101,6 @@
 		"eva2_water_supply":	false,
 		"eva2_water_waste":	false,
 		"oxy_vent":	false,
-		"depress":	true
+		"depress":	false
 	}
 }
