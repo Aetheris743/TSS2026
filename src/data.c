@@ -745,25 +745,21 @@ bool update_sim_UIA_connected(sim_engine_t* sim_engine) {
             //if vent is closed and oxygen EMU1 is closed, make sure that oxygen storage fields are not growing
             sim_field_t* oxy_pri_storage = sim_engine_find_field_within_component(eva1, "oxy_pri_storage");
             sim_field_t* oxy_sec_storage = sim_engine_find_field_within_component(eva1, "oxy_sec_storage");
-            if (oxy_pri_storage) {
+            if (dcu_using_primary_oxygen && oxy_pri_storage && oxy_sec_storage) {
                     oxy_pri_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
                     oxy_pri_storage->rate.f = OXY_RATE;
 
                     oxy_sec_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
                     oxy_sec_storage->rate.f = 0;
-            } else {
-                printf("Simulation tried to access non-existent field 'eva1.oxy_pri_storage' for UIA override\n");
-            }
+            } 
 
-            if (oxy_sec_storage) {
+            if (dcu_using_secondary_oxygen && oxy_pri_storage && oxy_sec_storage) {
                     oxy_sec_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
                     oxy_sec_storage->rate.f = OXY_RATE;
 
                     oxy_pri_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
                     oxy_pri_storage->rate.f = 0;
-            } else {
-                printf("Simulation tried to access non-existent field 'eva1.oxy_sec_storage' for UIA override\n");
-            }
+            } 
         }
 
         
