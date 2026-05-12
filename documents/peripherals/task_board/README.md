@@ -20,19 +20,23 @@ For file `XX_YY_ZZ.jpeg`:
 ### Close Up Photos
 If you are looking for the previous close-up photos, those can be found in the [deprecated](./deprecated/) directory. Close up component photos will not be prepared in multiple lighting conditions.
 
-### Dimensions
+### Dimensions & Labels
 The following table contains the dimensions of each component in both metric and imperial units. The relative location is based on their position in the bird's eye photo. The measurements are of the primary interface of the component, this does not include the base that is slightly larger than the panel portions.
 
-|               Name              |    Relative Location  |  Color  | Metric (mm) | Imperial (in) |
-| ------------------------------- | --------------------- | ------- | ----------- | ------------- |
-| Communications                  | Top-Left              | Silver  | 100 x 100   | 3.94 x 3.94   |
-| Navigation                      | Top-Right             | White   | 150 x 175   | 5.90 x 6.89   |
-| Backup Fuse                     | Top-Middle            | Gray    | 135 x 210   | 5.31 x 8.27   |
-| Power Distribution & Diagnostic | Bottom-Left           | White   | 175 x 315   | 6.89 x 12.4   |
-| Software Management             | Bottom-Middle         | White   | 120 x 145   | 4.72 x 5.71   |
-| Dust Sensor                     | Middle-Right          | White   | 50 x 50     | 1.97 x 1.97   |
-| Scientific Power Distribution   | Middle-Right          | Black   | 88 x 85     | 3.46 x 3.35   |
+In addition, each item the design evaluator will interact with or need to identify has been labeled visibly to aid in identification. The label code describes the device and its subsystem and has 4 random numbers on the end. The labels will be the primary method of identification in the [ltv-repairs-procedures.pdf](./../../procedures/ltv-repair-procedures.pdf) document.
 
+> Note: The dust sensor does not have a dedicated label, it is identified by being a cylindrical housing smaller than the palm of a hand
+
+|               Name              |    Label Code         |  Color  | Metric (mm) | Imperial (in) |
+| ------------------------------- | --------------------- | ------- | ----------- | ------------- |
+| Communications                  | ACM4400xxxx           | Silver  | 100 x 100   | 3.94 x 3.94   |
+| Navigation                      | NAV5500xxxx           | White   | 150 x 175   | 5.90 x 6.89   |
+| Backup Fuse                     | BFH9900xxxx           | Gray    | 135 x 210   | 5.31 x 8.27   |
+| Power Distribution & Diagnostic | PDD9900xxxx           | White   | 175 x 315   | 6.89 x 12.4   |
+| Software Management & Control   | SMC1100xxxx           | White   | 120 x 145   | 4.72 x 5.71   |
+| Dust Sensor                     | N/A (cylindrical item)| White   | 50 x 50     | 1.97 x 1.97   |
+| Scientific Power Regulation     | SPR2200xxxx           | Black   | 88 x 85     | 3.46 x 3.35   |
+| Scientific Management & Power Distribution| SMPD2200xxxx| Silver  | 55 x 80     | 2.17 x 3.15   |
 > Please note the Power Distribution & Diagnostic Component is irregularly shaped. The listed dimension are it's entire rectangular footprint. The diagnostic portion of this component measures `175mm x 155mm (6.89" x 6.10")` and the power distribution portion measures `70mm x 160mm (2.76" x 6.30")`
 
 
