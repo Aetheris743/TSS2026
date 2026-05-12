@@ -7,7 +7,7 @@
 			"oxy_sec_storage":	100,
 			"oxy_pri_pressure":	0,
 			"oxy_sec_pressure":	0,
-			"suit_pressure_oxy":	4,
+			"suit_pressure_oxy":	0,
 			"suit_pressure_co2":	0,
 			"suit_pressure_other":	0,
 			"suit_pressure_total":	0,
@@ -17,7 +17,7 @@
 			"scrubber_a_co2_storage":	0,
 			"scrubber_b_co2_storage":	0,
 			"temperature":	21.100000381469727,
-			"coolant_storage":	100,
+			"coolant_storage":	0,
 			"coolant_gas_pressure":	0,
 			"coolant_liquid_pressure":	500,
 			"heart_rate":	0,
@@ -81,9 +81,9 @@
 	},
 	"imu":	{
 		"eva1":	{
-			"posx":	-6804.291504,
-			"posy":	-10868.504883,
-			"heading":	0
+			"posx":	-6762.068359,
+			"posy":	-10814.757812,
+			"heading":	352.071533
 		},
 		"eva2":	{
 			"posx":	-6804.300781,

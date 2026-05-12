@@ -67,10 +67,10 @@
     "suit_pressure_oxy": {
       "type": "float",
       "algorithm": "constant_value",
-      "start_value": 4.0,
+      "start_value": 0.0,
       "min_value": 3.0,
       "max_value": 4.0,
-      "rate": 0.1
+      "rate": 0.02
 
     },
     "suit_pressure_co2": {
@@ -151,7 +151,7 @@
       "algorithm": "linear_decay",
       "min_value": 0.0,
       "max_value": 100.0,
-      "start_value": 100.0,
+      "start_value": 0.0,
       "rate": 0.05
     },
     "coolant_gas_pressure": {

@@ -207,7 +207,7 @@ bool sim_engine_load_component(sim_engine_t* engine, const char* json_file_path)
         
         field->algorithm = sim_algo_parse_type_string(cJSON_GetStringValue(algorithm));
         field->starting_algorithm = field->algorithm; // Store the starting algorithm for reset purposes
-        
+
         //Parse min_value, max_value, and start_value (base_value) for use in algorithms and for reset purposes
         cJSON* min_value = cJSON_GetObjectItem(field_json, "min_value");
         cJSON* max_value = cJSON_GetObjectItem(field_json, "max_value");
@@ -225,6 +225,7 @@ bool sim_engine_load_component(sim_engine_t* engine, const char* json_file_path)
         cJSON* frequency = cJSON_GetObjectItem(field_json, "frequency");
         cJSON* phase_acc = cJSON_GetObjectItem(field_json, "phase");
         cJSON* rate = cJSON_GetObjectItem(field_json, "rate");
+        field->starting_rate = field->rate;
 
         field->amplitude.f = (amplitude && cJSON_IsNumber(amplitude)) ? cJSON_GetNumberValue(amplitude) : 0.0f;
         field->frequency.f = (frequency && cJSON_IsNumber(frequency)) ? cJSON_GetNumberValue(frequency) : 0.0f;
@@ -506,6 +507,8 @@ void sim_engine_update(sim_engine_t* engine, float delta_time) {
             if(engine->num_task_board_errors == 0 && eva1->simulation_time == (engine->time_to_complete_task_board + engine->error_time)) {
                 throw_random_error(engine);
                 printf("Error thrown at simulation time: %.2f seconds\n", eva1->simulation_time);
+            } else if(eva1->simulation_time == (engine->time_to_complete_task_board + engine->error_time)) {
+                engine->time_to_complete_task_board = engine->time_to_complete_task_board+1;
             }
         } else {
             printf("Simulation tried to access non-existent component 'eva1'\n");
@@ -630,6 +633,7 @@ void sim_engine_reset_component(sim_engine_t* engine, const char* component_name
     for (int j = 0; j < target_component->field_count; j++) {
         sim_field_t* field = &target_component->fields[j];
         field->algorithm = field->starting_algorithm; // Reset to starting algorithm
+        field->rate = field->starting_rate;
         field->current_value.f = field->start_value.f; // Reset to starting value
     }
 

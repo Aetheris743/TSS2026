@@ -11,6 +11,7 @@ static void tss_to_unreal(SOCKET socket, struct sockaddr_in address, socklen_t l
                           struct backend_data_t *backend);
 void tss_to_ltv(SOCKET socket, struct sockaddr_in address, socklen_t len,
                           struct backend_data_t *backend);
+void tss_to_ltv_error(SOCKET socket, struct sockaddr_in address, socklen_t len, struct backend_data_t *backend, unsigned int error_index, unsigned int resolved);
 void server_send_ltv_reset(void* ctx);
 
 int main(int argc, char *argv[]) {
@@ -334,6 +335,28 @@ int main(int argc, char *argv[]) {
                                     drop_tcp_client(&clients, client);
                                 } else {
                                     if (html_form_json_update(request_content, backend)) {
+                                        
+                                        if (strstr(request_content, "ltv_errors.error_procedures.")) {
+                                            unsigned int index = 0;
+                                            unsigned int resolved = 0;
+
+                                            sscanf(
+                                                request_content,
+                                                "ltv_errors.error_procedures.%u.needs_resolved=%u",
+                                                &index,
+                                                &resolved
+                                            );
+
+                                            tss_to_ltv_error(
+                                                server_ctx.udp_socket,
+                                                server_ctx.ltv_addr,
+                                                server_ctx.ltv_addr_len,
+                                                backend,
+                                                index,
+                                                resolved
+                                            );
+                                        }
+                                        
                                         send_304(client);
                                     } else {
                                         send_400(client);
@@ -578,6 +601,46 @@ static void tss_to_unreal(SOCKET socket, struct sockaddr_in address, socklen_t l
         printf("Ping requested, sending Unreal ping command\n");
         update_json_file("LTV", "signal", "ping_unlimited_requested", "0");
     }
+}
+
+void tss_to_ltv_error(
+    SOCKET socket,
+    struct sockaddr_in address,
+    socklen_t len,
+    struct backend_data_t *backend,
+    unsigned int error_index,
+    unsigned int resolved
+)
+{
+    unsigned char buffer[12] = {0};
+
+    unsigned int time_be = htonl(backend->server_up_time);
+
+    // Example command mapping
+    unsigned int command = 5000 + error_index;
+
+    unsigned int command_be = htonl(command);
+
+    unsigned int resolved_be = htonl(resolved);
+
+    memcpy(buffer, &time_be, 4);
+    memcpy(buffer + 4, &command_be, 4);
+    memcpy(buffer + 8, &resolved_be, 4);
+
+    sendto(
+        socket,
+        buffer,
+        sizeof(buffer),
+        0,
+        (struct sockaddr *)&address,
+        len
+    );
+
+    printf(
+        "Sent LTV error command %u resolved=%u\n",
+        command,
+        resolved
+    );
 }
 
 /**

@@ -744,25 +744,22 @@ bool update_sim_UIA_connected(sim_engine_t* sim_engine) {
         } else {
             //if vent is closed and oxygen EMU1 is closed, make sure that oxygen storage fields are not growing
             sim_field_t* oxy_pri_storage = sim_engine_find_field_within_component(eva1, "oxy_pri_storage");
-            if (oxy_pri_storage) {
-                if(oxy_pri_storage->algorithm != SIM_ALGO_LINEAR_DECAY) { 
+            sim_field_t* oxy_sec_storage = sim_engine_find_field_within_component(eva1, "oxy_sec_storage");
+            if (dcu_using_primary_oxygen && oxy_pri_storage && oxy_sec_storage) {
                     oxy_pri_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
                     oxy_pri_storage->rate.f = OXY_RATE;
-                }
-                
-            } else {
-                printf("Simulation tried to access non-existent field 'eva1.oxy_pri_storage' for UIA override\n");
-            }
 
-            sim_field_t* oxy_sec_storage = sim_engine_find_field_within_component(eva1, "oxy_sec_storage");
-            if (oxy_sec_storage) {
-                if(oxy_sec_storage->algorithm != SIM_ALGO_LINEAR_DECAY) {
+                    oxy_sec_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
+                    oxy_sec_storage->rate.f = 0;
+            } 
+
+            if (dcu_using_secondary_oxygen && oxy_pri_storage && oxy_sec_storage) {
                     oxy_sec_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
                     oxy_sec_storage->rate.f = OXY_RATE;
-                }
-            } else {
-                printf("Simulation tried to access non-existent field 'eva1.oxy_sec_storage' for UIA override\n");
-            }
+
+                    oxy_pri_storage->algorithm = SIM_ALGO_LINEAR_DECAY;
+                    oxy_pri_storage->rate.f = 0;
+            } 
         }
 
         
@@ -788,7 +785,7 @@ bool update_sim_UIA_connected(sim_engine_t* sim_engine) {
 
         //fill the suit pressures and O2 pressure until they are both 4
         //only do so if primary O2 pressure > 2900
-        if(uia_oxy_vent_closed && uia_oxy_emu1_closed && dcu_using_primary_oxygen && current_oxy_pressure > 2900.0f) {
+        if(uia_oxy_vent_closed && uia_oxy_emu1_closed && dcu_using_primary_oxygen && current_oxy_pressure > 1000.0f) {
             sim_field_t* suit_pressure_oxy_field = sim_engine_find_field_within_component(eva1, "suit_pressure_oxy");
             if (suit_pressure_oxy_field) {
                 if(suit_pressure_oxy_field->current_value.f < 4.0f ) {
@@ -1938,8 +1935,8 @@ void backend_reset_errors(void* ctx) {
     update_json_file("LTV_ERRORS", "error_procedures", "3.needs_resolved", "true");
     update_json_file("LTV_ERRORS", "error_procedures", "4.needs_resolved", "false");
     update_json_file("LTV_ERRORS", "error_procedures", "5.needs_resolved", "false");
-    update_json_file("LTV_ERRORS", "error_procedures", "6.needs_resolved", "true");
-    update_json_file("LTV_ERRORS", "error_procedures", "7.needs_resolved", "true");
+    //update_json_file("LTV_ERRORS", "error_procedures", "6.needs_resolved", "true");
+    //update_json_file("LTV_ERRORS", "error_procedures", "7.needs_resolved", "true");
 
     printf("LTV errors reset via update_json_file\n");
 }

@@ -57,6 +57,7 @@ typedef struct {
     sim_value_t frequency; // Used for sine wave algorithm
     sim_value_t phase_acc; // Used for sine wave algorithm
     sim_value_t rate; // Used for linear growth/decay algorithms
+    sim_value_t starting_rate;
 
     // Algorithm parameters (parsed from JSON)
     cJSON* params;
