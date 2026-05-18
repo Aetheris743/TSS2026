@@ -119,7 +119,7 @@
       "start_value": 100.0,
       "end_value": 20.0,
       "duration_seconds": 2000.0,
-      "rate": 0.04
+      "rate": 0.0001
     },
     "oxygen_pressure": {
       "type": "float",
@@ -171,7 +171,7 @@
     "primary_battery_level": {
       "type": "float",
       "algorithm": "dependent_value",
-      "formula": "100.0 - rover_elapsed_time * ( 0.02857 + speed * 0.00508 )",
+      "formula": "100.0 - .1* rover_elapsed_time * ( 0.02857 + speed * 0.00508 )",
       "depends_on": ["rover_elapsed_time", "speed"]
     },
     "secondary_battery_level": {
