@@ -38,7 +38,7 @@ sim_value_t sim_algo_sine_wave(sim_field_t* field) {
     field->phase_acc.f += freq;
 
     // Keep phase in [0, 2π] for numerical stability
-    if (field->phase_acc.f > 2.0f * M_PI) {
+    if (field->phase_acc.f > 2.0f * 3.1415f) {
         field->phase_acc.f = 0.0f;
     }
 
@@ -357,7 +357,7 @@ float sim_algo_evaluate_formula(const char* formula, sim_engine_t* engine) {
     char* token;
     char* rest = formula_copy;
 
-    while ((token = strtok_r(rest, " ", &rest))) {
+    while ((token = strtok_s(rest, " ", &rest))) {
         // Skip commas
         if (strcmp(token, ",") == 0) {
             continue;
