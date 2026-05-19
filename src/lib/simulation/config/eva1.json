@@ -23,7 +23,7 @@
       "algorithm": "linear_decay",
       "min_value": 0.0,
       "max_value": 100.0,
-      "rate": 0.1,
+      "rate": 0.013,
       "start_value": 100.0
     },
     "oxy_sec_storage": {
@@ -31,7 +31,7 @@
       "algorithm": "linear_decay",
       "min_value": 0.0,
       "max_value": 100.0,
-      "rate": 0.1,
+      "rate": 0.013,
       "start_value": 100.0
     },
     "oxy_pri_pressure": {
@@ -55,13 +55,13 @@
     "oxy_consumption": {
       "type": "float",
       "algorithm": "dependent_value",
-      "formula": "0.08 + ( heart_rate - 70.0 ) * 0.0008",
+      "formula": "0.1 + 0.0001 * heart_rate",
       "depends_on": ["heart_rate"]
     },
     "co2_production": {
       "type": "float",
       "algorithm": "dependent_value",
-      "formula": "0.08 + ( heart_rate - 70.0 ) * 0.0008",
+      "formula": "0.11 + 0.0002 * heart_rate",
       "depends_on": ["heart_rate"]
     },
     "suit_pressure_oxy": {
@@ -70,14 +70,14 @@
       "start_value": 0.0,
       "min_value": 3.0,
       "max_value": 4.0,
-      "rate": 0.02
+      "rate": 0.26
 
     },
     "suit_pressure_co2": {
       "type": "float",
       "algorithm": "linear_growth",
       "min_value": 0.0,
-      "max_value": 0.2,
+      "max_value": 0.1,
       "start_value": 0.0,
       "rate": 0.001
     },
@@ -140,6 +140,7 @@
     "temperature": {
       "type": "float",
       "algorithm": "sine_wave",
+      "start_value": 21.1,
       "base_value": 21.1,
       "amplitude": 5.1,
       "frequency": 0.018,
