@@ -119,19 +119,19 @@
       "start_value": 100.0,
       "end_value": 20.0,
       "duration_seconds": 2000.0,
-      "rate": 0.04
+      "rate": 0.006
     },
     "oxygen_pressure": {
       "type": "float",
       "algorithm": "dependent_value",
-      "formula": "oxygen_storage * 30.0",
+      "formula": "3000.0  - ( 100 - oxygen_storage ) * 0.02",
       "depends_on": ["oxygen_storage"]
     },
     "cabin_pressure": {
       "type": "float",
       "algorithm": "sine_wave",
       "base_value": 4.0,
-      "amplitude": 0.1,
+      "amplitude": 0.05,
       "frequency": 0.008
     },
     "cabin_temperature": {
@@ -171,7 +171,7 @@
     "primary_battery_level": {
       "type": "float",
       "algorithm": "dependent_value",
-      "formula": "100.0 - rover_elapsed_time * ( 0.02857 + speed * 0.00508 )",
+      "formula": "100.0 - 0.02 * rover_elapsed_time - 0.0001 * speed",
       "depends_on": ["rover_elapsed_time", "speed"]
     },
     "secondary_battery_level": {

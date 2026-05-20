@@ -232,12 +232,11 @@ int main(int argc, char *argv[]) {
                 drop_udp_client(&udp_clients, client);
             } else if (command == 4000) {  // LTV Task Board registration
                 server_ctx.ltv_addr = client->udp_addr;
-                server_ctx.ltv_addr.sin_port = htons(14141);
-                
                 server_ctx.ltv_addr_len = client->address_length;
-                printf("LTV Address updated to: %s:%d\n", 
-                        inet_ntoa(server_ctx.ltv_addr.sin_addr), 
-                        ntohs(server_ctx.ltv_addr.sin_port));
+
+                printf("LTV Address updated to: %s:%d\n",
+                    inet_ntoa(server_ctx.ltv_addr.sin_addr),
+                    ntohs(server_ctx.ltv_addr.sin_port));
 
                 drop_udp_client(&udp_clients, client);
             } else {  // Unknown command

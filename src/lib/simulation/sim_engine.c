@@ -225,13 +225,14 @@ bool sim_engine_load_component(sim_engine_t* engine, const char* json_file_path)
         cJSON* frequency = cJSON_GetObjectItem(field_json, "frequency");
         cJSON* phase_acc = cJSON_GetObjectItem(field_json, "phase");
         cJSON* rate = cJSON_GetObjectItem(field_json, "rate");
-        field->starting_rate = field->rate;
+        
 
         field->amplitude.f = (amplitude && cJSON_IsNumber(amplitude)) ? cJSON_GetNumberValue(amplitude) : 0.0f;
         field->frequency.f = (frequency && cJSON_IsNumber(frequency)) ? cJSON_GetNumberValue(frequency) : 0.0f;
         field->phase_acc.f = (phase_acc && cJSON_IsNumber(phase_acc)) ? cJSON_GetNumberValue(phase_acc) : 0.0f;
         field->rate.f = (rate && cJSON_IsNumber(rate)) ? cJSON_GetNumberValue(rate) : 0.0f;
-        
+        field->starting_rate.f = field->rate.f;
+
         // Parse type (always float)
         field->type = SIM_TYPE_FLOAT;
         
@@ -629,12 +630,14 @@ void sim_engine_reset_component(sim_engine_t* engine, const char* component_name
         return;
     }
 
+
     //Reset all fields of the component to their initial state
     for (int j = 0; j < target_component->field_count; j++) {
         sim_field_t* field = &target_component->fields[j];
         field->algorithm = field->starting_algorithm; // Reset to starting algorithm
         field->rate = field->starting_rate;
         field->current_value.f = field->start_value.f; // Reset to starting value
+        field->phase_acc.f = 0;
     }
 
     //send reset command to LTV

@@ -1229,7 +1229,7 @@ void update_fan_error_state(sim_engine_t* sim_engine) {
         update_json_file("EVA", "error", "fan_error", "false");
         if(fan_error_thrown) {
             field_helmet_pressure_co2->algorithm = SIM_ALGO_LINEAR_DECAY;
-            field_helmet_pressure_co2->rate.f = CO2_RATE;
+            field_helmet_pressure_co2->rate.f = 1000.0;
         }
     } else if (fan_error_thrown && sim_engine->dcu_field_settings->fan == true) {
         update_json_file("EVA", "error", "fan_error", "true");
@@ -2050,6 +2050,7 @@ bool html_form_json_update(char* request_content, struct backend_data_t* backend
                     printf("Started EVA simulation\n");
                 } else {
                     sim_engine_reset_component(backend->sim_engine, "eva1", update_json_file);
+                    backend->sim_engine->time_to_complete_task_board = -10;
                     sim_engine_reset_component(backend->sim_engine, "eva2", update_json_file);
                     reset_eva_station_timing();
                     printf("Reset EVA simulation\n");

@@ -4,8 +4,8 @@
 		"last_known_y":	-10460.6
 	},
 	"signal":	{
-		"strength":	0,
-		"ping_requested":	0,
+		"strength":	-50.666264,
+		"ping_requested":	false,
 		"ping_unlimited_requested":	0
 	}
 }
