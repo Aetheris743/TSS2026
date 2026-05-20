@@ -357,7 +357,7 @@ float sim_algo_evaluate_formula(const char* formula, sim_engine_t* engine) {
     char* token;
     char* rest = formula_copy;
 
-    while ((token = strtok_s(rest, " ", &rest))) {
+    while ((token = strtok_r(rest, " ", &rest))) {
         // Skip commas
         if (strcmp(token, ",") == 0) {
             continue;
